@@ -5,8 +5,9 @@ images/mjpgs/*
 # Default image that is taken by main.cpp
 images/snapped_images/main.jpeg
 # Temporary gnuplot graphs
-images/gnuplot/*
 !images/gnuplot
+*.png
+*.jpg
 *.mjpeg
 
 *.log
