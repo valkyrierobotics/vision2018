@@ -6,6 +6,6 @@
 
 #include "laplacianSharpen.hpp"
 
-void laplacianSharpenWindows(cv::Mat &img, int &ksize, int &scale, int &delta, int &apply, bool visible, const bool STREAM);
+void laplacianSharpenWindows(cv::Mat &img, int &ksize, int &scale, int &delta, int &apply, bool visible, const bool isStreaming);
 
 #endif // LAPLACIAN_SHARPEN_WINDOWS_HPP

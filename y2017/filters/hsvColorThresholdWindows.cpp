@@ -1,6 +1,6 @@
 #include "filters/hsvColorThresholdWindows.hpp"
 
-void hsvColorThresholdWindows(cv::Mat &output, int &hMin, int &hMax, int &sMin, int &sMax, int &vMin, int &vMax, int &debugMode, int &bitAnd, int &apply, bool visible, const bool STREAM)
+void hsvColorThresholdWindows(cv::Mat &output, int &hMin, int &hMax, int &sMin, int &sMax, int &vMin, int &vMax, int &debugMode, int &bitAnd, int &apply, bool visible, const bool isStreaming)
 {
 	if (visible)
    	{
@@ -26,7 +26,7 @@ void hsvColorThresholdWindows(cv::Mat &output, int &hMin, int &hMax, int &sMin, 
 	if (apply)
 	{	
 		hsvColorThreshold(output, hMin, hMax, sMin, sMax, vMin, vMax, debugMode, bitAnd);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("HSV Color Threshold Output", cv::WINDOW_AUTOSIZE);
             cv::imshow("HSV Color Threshold Output", output);

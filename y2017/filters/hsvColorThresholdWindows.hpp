@@ -6,6 +6,6 @@
 
 #include "hsvColorThreshold.hpp"
 
-void hsvColorThresholdWindows(cv::Mat &output, int &hMin, int &hMax, int &sMin, int &sMax, int &vMin, int &vMax, int &debugMode, int &bitAnd, int &apply, bool visible, const bool STREAM);
+void hsvColorThresholdWindows(cv::Mat &output, int &hMin, int &hMax, int &sMin, int &sMax, int &vMin, int &vMax, int &debugMode, int &bitAnd, int &apply, bool visible, const bool isStreaming);
 
 #endif // HSV_COLOR_THRESHOLD_WINDOWS_HPP

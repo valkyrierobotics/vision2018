@@ -1,6 +1,6 @@
 #include "filters/shapeThresholdsWindows.hpp"
 
-void sideRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& sideRatio, int& sideRatioMaxDeviation, int& apply, bool visible, const bool STREAM)
+void sideRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& sideRatio, int& sideRatioMaxDeviation, int& apply, bool visible, const bool isStreaming)
 {
 	if (visible)
 	{
@@ -18,7 +18,7 @@ void sideRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> 
 	if (apply)
 	{
 		sideRatioThreshold(contours, boundedRects, static_cast<double>(sideRatio) / 100, static_cast<double>(sideRatioMaxDeviation) / 100);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Side Ratio Threshold Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("Side Ratio Threshold Output", img);
@@ -30,7 +30,7 @@ void sideRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> 
 	}
 }
 
-void angleThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& angleMaxDeviation, int& apply, bool visible, const bool STREAM)
+void angleThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& angleMaxDeviation, int& apply, bool visible, const bool isStreaming)
 {
 	if (visible)
 	{
@@ -46,7 +46,7 @@ void angleThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& c
 	if (apply)
 	{
 		angleThreshold(contours, boundedRects, angleMaxDeviation);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Angle Threshold Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("Angle Threshold Output", img);
@@ -58,7 +58,7 @@ void angleThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& c
 	}
 }
 
-void areaRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& minArea, int& maxArea, int& areaRatio, int& areaRatioMaxDeviation, int& apply, bool visible, const bool STREAM)
+void areaRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& minArea, int& maxArea, int& areaRatio, int& areaRatioMaxDeviation, int& apply, bool visible, const bool isStreaming)
 {
 	if (visible)
 	{
@@ -77,7 +77,7 @@ void areaRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> 
 	if (apply)
 	{
 		areaRatioThreshold(contours, boundedRects, minArea, maxArea, static_cast<double>(areaRatio) / 100, static_cast<double>(areaRatioMaxDeviation) / 100);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Area Ratio Threshold Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("Area Ratio Threshold Output", img);
@@ -89,7 +89,7 @@ void areaRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> 
 	}
 }
 
-void uShapeThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& minDist, int& maxDist, int& apply, bool visible, const bool STREAM)
+void uShapeThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int& minDist, int& maxDist, int& apply, bool visible, const bool isStreaming)
 {
 	if (visible)
 	{
@@ -106,7 +106,7 @@ void uShapeThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> >& 
 	if (apply)
 	{
         uShapeThreshold(contours, boundedRects, minDist, maxDist);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("U Shape Threshold Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("U Shape Threshold Output", img);

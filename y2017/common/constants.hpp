@@ -4,22 +4,18 @@
 #include <cmath>
 #include <opencv2/opencv.hpp>
 
-// Calculating fps
-#define TRACK_FPS 1
-// Calibrating with windows instead of deployment
-#define CALIB 0
-// Streaming to mjpg-streamer instead of cv::imshow
-const bool STREAM = false;
-// Flip image if camera is upside down
-#define IS_CAMERA_UPSIDE_DOWN 0
+#define TRACK_FPS 1 // Calculating fps
+#define CALIB 0 // Calibrating with windows instead of deployment
+#define STREAM 1 // Streaming to mjpg-streamer instead of cv::imshow
+#define IS_CAMERA_UPSIDE_DOWN 0 // Flip image if camera is upside down
 #define MAX_GAME_PIECE_CORNERS 4
 
 namespace camera
 {
+  const int ID = 0; // Index of camera
   const int SCREEN_WIDTH = 640;
   const int SCREEN_HEIGHT = 480;
   const int FPS = 30;
-  const int ID = 0; // Index of camera
 
   // Measurements in inches
   const double ELEVATION = 0.5; // Mounting position above ground level
@@ -52,17 +48,13 @@ namespace camera
     double theta;
     double euclidDist;
   };
-
 }
-
-// Measurements in inches
-#define INCHES_OVER_MM 25.4
 
 const std::string FPS_FILE = "logs/fps.log";
 const std::string PROC_DATA_FILE = "logs/processed_data.log";
 
 // const std::string TARGET_ADDR = "10.2.99.2"; // Static IP address of roboRIO
-const std::string TARGET_ADDR = "127.0.0.1"; // Static IP address of roboRIO
+const std::string TARGET_ADDR = "127.0.0.1"; // Localhost for testing
 const std::string HOST_ADDR = "localhost";
 const int UDP_PORT = 5810;
 
@@ -78,7 +70,7 @@ namespace game_piece
   // Measurements in inches
   const double WIDTH = 2;
   const double HEIGHT = 5;
-  const double SPACING = 6.25; // Spacing between the two parts of the tape
+  const double SPACING = 6.25; // Spacing between the inner sides of the tapes
   const double ELEVATION = 10.75;
 }
 

@@ -1,7 +1,5 @@
 #include "filters/shapeThresholds.hpp"
 
-#include <iostream>
-
 void areaRatioThreshold (std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int minArea, int maxArea, double areaRatio, double areaRatioMaxDeviation)
 {
     for (size_t i = 0; i < boundedRects.size(); ++i)

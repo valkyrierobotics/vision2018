@@ -1,5 +1,4 @@
 #include "filters/gaussianBlur.hpp"
-#include <iostream>
 
 void gaussianBlur(cv::Mat &img, int blur_ksize, int sigmaX, int sigmaY) 
 {

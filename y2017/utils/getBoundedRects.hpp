@@ -4,6 +4,7 @@
 #include <vector>
 #include <opencv2/imgproc/imgproc.hpp>
 
-std::vector<cv::RotatedRect> getBoundedRects(std::vector< std::vector<cv::Point> >& contours);
+::std::vector<::cv::RotatedRect> getBoundedRects(::std::vector< ::std::vector<::cv::Point> >& contours);
+::cv::RotatedRect mergedBoundedRect(::std::vector < ::std::vector<::cv::Point> >& contours);
 
 #endif // GET_BOUNDED_RECTS_HPP

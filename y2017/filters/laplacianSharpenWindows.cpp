@@ -1,6 +1,6 @@
 #include "filters/laplacianSharpenWindows.hpp"
 
-void laplacianSharpenWindows(cv::Mat &img, int &ksize, int &scale, int &delta, int &apply, bool visible, const bool STREAM)
+void laplacianSharpenWindows(cv::Mat &img, int &ksize, int &scale, int &delta, int &apply, bool visible, const bool isStreaming)
 {
 	if (visible)
    	{
@@ -19,7 +19,7 @@ void laplacianSharpenWindows(cv::Mat &img, int &ksize, int &scale, int &delta, i
 	if (apply)
 	{
 		laplacianSharpen(img, ksize, scale, delta);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Laplacian Sharpen Output", cv::WINDOW_AUTOSIZE);
             cv::imshow("Laplacian Sharpen Output", img);

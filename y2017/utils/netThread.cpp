@@ -70,7 +70,7 @@ void receiveData (udp_client_server::udp_server& server)
 void sendProtobuf(y2017::vision::VisionData& msg, aos::events::TXUdpSocket& client)
 {
   std::string buf;
-  msg.SerializeToString(&buf); 
-  // Cannot use strlen for byte arrays
-  client.Send(buf.c_str(), sizeof(buf) / sizeof(buf[0]));
+  msg.SerializeToString(&buf);
+  // Cannot use strlen for protobuf because they use as few bytes as possible
+  client.Send(buf.c_str(), msg.ByteSize());
 }

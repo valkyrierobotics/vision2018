@@ -83,7 +83,7 @@ void protobuf_AddDesc_vision_5fdata_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\021vision_data.proto\022\014y2017.vision\"J\n\nVis"
     "ionData\022\027\n\017image_timestamp\030\001 \001(\003\022\026\n\016send"
-    "_timestamp\030\003 \001(\003\022\013\n\003yaw\030\002 \001(\001", 109);
+    "_timestamp\030\002 \001(\003\022\013\n\003yaw\030\003 \001(\001", 109);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "vision_data.proto", &protobuf_RegisterTypes);
   VisionData::default_instance_ = new VisionData();
@@ -109,7 +109,6 @@ const int VisionData::kYawFieldNumber;
 VisionData::VisionData()
   : ::google::protobuf::Message() {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:y2017.vision.VisionData)
 }
 
 void VisionData::InitAsDefaultInstance() {
@@ -119,7 +118,6 @@ VisionData::VisionData(const VisionData& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:y2017.vision.VisionData)
 }
 
 void VisionData::SharedCtor() {
@@ -131,7 +129,6 @@ void VisionData::SharedCtor() {
 }
 
 VisionData::~VisionData() {
-  // @@protoc_insertion_point(destructor:y2017.vision.VisionData)
   SharedDtor();
 }
 
@@ -162,85 +159,73 @@ VisionData* VisionData::New() const {
 }
 
 void VisionData::Clear() {
-#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
-  &reinterpret_cast<VisionData*>(16)->f) - \
-   reinterpret_cast<char*>(16))
-
-#define ZR_(first, last) do {                              \
-    size_t f = OFFSET_OF_FIELD_(first);                    \
-    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
-    ::memset(&first, 0, n);                                \
-  } while (0)
-
-  ZR_(image_timestamp_, yaw_);
-
-#undef OFFSET_OF_FIELD_
-#undef ZR_
-
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    image_timestamp_ = GOOGLE_LONGLONG(0);
+    send_timestamp_ = GOOGLE_LONGLONG(0);
+    yaw_ = 0;
+  }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
 
 bool VisionData::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:y2017.vision.VisionData)
-  for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
-    tag = p.first;
-    if (!p.second) goto handle_unusual;
+  while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
       // optional int64 image_timestamp = 1;
       case 1: {
-        if (tag == 8) {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
                  input, &image_timestamp_)));
           set_has_image_timestamp();
         } else {
-          goto handle_unusual;
+          goto handle_uninterpreted;
         }
-        if (input->ExpectTag(17)) goto parse_yaw;
+        if (input->ExpectTag(16)) goto parse_send_timestamp;
         break;
       }
 
-      // optional double yaw = 2;
+      // optional int64 send_timestamp = 2;
       case 2: {
-        if (tag == 17) {
-         parse_yaw:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
-                 input, &yaw_)));
-          set_has_yaw();
-        } else {
-          goto handle_unusual;
-        }
-        if (input->ExpectTag(24)) goto parse_send_timestamp;
-        break;
-      }
-
-      // optional int64 send_timestamp = 3;
-      case 3: {
-        if (tag == 24) {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
          parse_send_timestamp:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
                  input, &send_timestamp_)));
           set_has_send_timestamp();
         } else {
-          goto handle_unusual;
+          goto handle_uninterpreted;
         }
-        if (input->ExpectAtEnd()) goto success;
+        if (input->ExpectTag(25)) goto parse_yaw;
+        break;
+      }
+
+      // optional double yaw = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_FIXED64) {
+         parse_yaw:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
+                 input, &yaw_)));
+          set_has_yaw();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
         break;
       }
 
       default: {
-      handle_unusual:
-        if (tag == 0 ||
-            ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
-          goto success;
+          return true;
         }
         DO_(::google::protobuf::internal::WireFormat::SkipField(
               input, tag, mutable_unknown_fields()));
@@ -248,63 +233,54 @@ bool VisionData::MergePartialFromCodedStream(
       }
     }
   }
-success:
-  // @@protoc_insertion_point(parse_success:y2017.vision.VisionData)
   return true;
-failure:
-  // @@protoc_insertion_point(parse_failure:y2017.vision.VisionData)
-  return false;
 #undef DO_
 }
 
 void VisionData::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:y2017.vision.VisionData)
   // optional int64 image_timestamp = 1;
   if (has_image_timestamp()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt64(1, this->image_timestamp(), output);
   }
 
-  // optional double yaw = 2;
-  if (has_yaw()) {
-    ::google::protobuf::internal::WireFormatLite::WriteDouble(2, this->yaw(), output);
+  // optional int64 send_timestamp = 2;
+  if (has_send_timestamp()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(2, this->send_timestamp(), output);
   }
 
-  // optional int64 send_timestamp = 3;
-  if (has_send_timestamp()) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt64(3, this->send_timestamp(), output);
+  // optional double yaw = 3;
+  if (has_yaw()) {
+    ::google::protobuf::internal::WireFormatLite::WriteDouble(3, this->yaw(), output);
   }
 
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
-  // @@protoc_insertion_point(serialize_end:y2017.vision.VisionData)
 }
 
 ::google::protobuf::uint8* VisionData::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:y2017.vision.VisionData)
   // optional int64 image_timestamp = 1;
   if (has_image_timestamp()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(1, this->image_timestamp(), target);
   }
 
-  // optional double yaw = 2;
-  if (has_yaw()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(2, this->yaw(), target);
+  // optional int64 send_timestamp = 2;
+  if (has_send_timestamp()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(2, this->send_timestamp(), target);
   }
 
-  // optional int64 send_timestamp = 3;
-  if (has_send_timestamp()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(3, this->send_timestamp(), target);
+  // optional double yaw = 3;
+  if (has_yaw()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteDoubleToArray(3, this->yaw(), target);
   }
 
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:y2017.vision.VisionData)
   return target;
 }
 
@@ -319,14 +295,14 @@ int VisionData::ByteSize() const {
           this->image_timestamp());
     }
 
-    // optional int64 send_timestamp = 3;
+    // optional int64 send_timestamp = 2;
     if (has_send_timestamp()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int64Size(
           this->send_timestamp());
     }
 
-    // optional double yaw = 2;
+    // optional double yaw = 3;
     if (has_yaw()) {
       total_size += 1 + 8;
     }

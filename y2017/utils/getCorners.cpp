@@ -35,7 +35,7 @@ void CornerExtractor::update(cv::Mat& img,
 // Returns empty vector when filter is not applied / successful.
 std::vector<cv::Point2f> CornerExtractor::getCorners()
 {
-#if CALIB && !STREAM
+#if CALIB && !isStreaming
   // TODO: set this up with callbacks that somehow call update()
   startWindows();
 #endif

@@ -1,0 +1,35 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing
+
+exec 2> /tmp/rc.local.log
+exec 1>&2 
+set -x
+
+# /dev/video0 is vision camera
+# /dev/video1 is driver camera
+
+# Stream from mjpg video compressed by OpenCV, open 10.2.99.3:8080 in browser
+# sudo su - ubuntu -c '/usr/local/bin/mjpg_streamer -i "/usr/local/lib/input_file.so -f /home/ubuntu/Github/vision2016/images/mjpgs/" -o "/usr/local/lib/output_http.so -w /usr/local/www"'&
+
+# Stream from mjpg video compressed by OpenCV, open 10.2.99.3:443 in browser
+watch -n3 '/usr/local/bin/mjpg_streamer -i "/usr/local/lib/input_file.so -f /home/ubuntu/Github/vision2016/images/mjpgs/" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 443"'&
+
+# Stream from raw video (blocks camera), open 10.2.99.3:80 in browser
+watch -n3 '/usr/local/bin/mjpg_streamer -i "/usr/local/lib/input_uvc.so -d /dev/video1 -r 640x480 -f 10 -q 50" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 80"'&
+
+# Super sketchy way of setting the exposure of the vision camera low
+watch -n3 'v4l2-ctl -c exposure_auto_priority=0 -c exposure_auto=1 -c exposure_absolute=20 --device=/dev/video0' &
+
+while sudo su - ubuntu -c 'cd /home/ubuntu/Github/vision2016/; make protobuf_test&; make main'; do :; done&
+
+exit 0

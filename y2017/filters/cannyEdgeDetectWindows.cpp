@@ -1,6 +1,6 @@
 #include "filters/cannyEdgeDetectWindows.hpp"
 
-void cannyEdgeDetectWindows(cv::Mat &img, int &threshLow, int &threshHigh, int &apply, bool visible, const bool STREAM)
+void cannyEdgeDetectWindows(cv::Mat &img, int &threshLow, int &threshHigh, int &apply, bool visible, const bool isStreaming)
 {
 	if (visible)
    	{
@@ -18,7 +18,7 @@ void cannyEdgeDetectWindows(cv::Mat &img, int &threshLow, int &threshHigh, int &
 	if (apply)	
 	{
 		cannyEdgeDetect(img, threshLow, threshHigh);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Canny Edge Detection Output", cv::WINDOW_AUTOSIZE);
             cv::imshow("Canny Edge Detection Output", img);

@@ -6,6 +6,6 @@
 
 #include "houghCircles.hpp"
 
-void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool STREAM);
+void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool isStreaming);
 
 #endif // HOUGH_CIRCLES_WINDOWS_HPP

@@ -1,6 +1,6 @@
 #include "filters/dilateErodeWindows.hpp"
 
-void dilateErodeWindows(cv::Mat &output, cv::Mat &element, int &holes, int &noise, int &apply, bool visible, const bool STREAM)
+void dilateErodeWindows(cv::Mat &output, cv::Mat &element, int &holes, int &noise, int &apply, bool visible, const bool isStreaming)
 {
 	if (visible)
    	{
@@ -18,7 +18,7 @@ void dilateErodeWindows(cv::Mat &output, cv::Mat &element, int &holes, int &nois
 	if (apply)
 	{
 		dilateErode(output, element, holes, noise);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Dilate and Erode Output", cv::WINDOW_AUTOSIZE);
             cv::imshow("Dilate and Erode Output", output);

@@ -1,6 +1,6 @@
 #include "filters/gaussianBlurWindows.hpp"
 
-void gaussianBlurWindows(cv::Mat &img, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible, const bool STREAM)
+void gaussianBlurWindows(cv::Mat &img, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible, const bool isStreaming)
 {
 	if (visible)
    	{
@@ -18,7 +18,7 @@ void gaussianBlurWindows(cv::Mat &img, int &blur_ksize, int &sigmaX, int &sigmaY
 	if (apply)
 	{
 		gaussianBlur(img, blur_ksize, sigmaX, sigmaY);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             //cv::namedWindow("Gaussian Blur Output", cv::WINDOW_AUTOSIZE);
             //cv::imshow("Gaussian Blur Output", img);

@@ -40,9 +40,16 @@ build/lazer-vision-dbg.so: $(OBJS_DEBUG)
 clean:
 	$(RM) -rf build/ obj/ .build_dir
 
+# Change camera's exposure and run vision
+	# nohup watch -n10 'v4l2-ctl -c exposure_auto_priority=0 -c exposure_auto=1 -c exposure_absolute=20 --device=/dev/video1' &
 main: deploy
 	$(CXX) main.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
 	build/main ${MAIN_ARGS}
+
+# Test protouf (necessary to run main without connecting to roboRIO)
+protobuf_test: deploy
+	$(CXX) protobuf_test.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/protobuf_test $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	build/protobuf_test
 
 drive_camera:
 	$(CXX) drive_camera.cpp build/lazer-vision.so -o build/drive_camera $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
@@ -62,8 +69,7 @@ mjpg_streamer_instance:
 		echo "Killing existing mjpg_streamer instances"; \
 		killall mjpg_streamer; \
 	fi; \
-	mjpg_streamer -i "/usr/local/lib/input_uvc.so -d /dev/video0 -r 640x480 -f 10 -q 80" -o "/usr/local/lib/output_http.so -w /usr/local/www" 
-	# mjpg_streamer -i "input_file.so -f ./images/mjpgs/" -o "output_http.so -w /usr/local/www" 
+	sudo mjpg_streamer -i "/usr/local/lib/input_file.so -f ./images/mjpgs/" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 443" 
 
 gnuplot_vision:
 	# ARGS is for gnuplot_auto_plotter.sh

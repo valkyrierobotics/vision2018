@@ -1,6 +1,6 @@
 #include "filters/houghCirclesWindows.hpp"
 
-void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool STREAM)
+void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool isStreaming)
 {
 	if (visible)
 	{
@@ -18,7 +18,7 @@ void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRad
 	if (apply)
 	{
 		houghCircles(img, minDist, minRadius, maxRadius);
-        if (visible && !STREAM)
+        if (visible && !isStreaming)
         {
             cv::namedWindow("Hough Circles Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("Hough Circles Output", img);
