@@ -1,5 +1,7 @@
 #include "filters/shapeThresholds.hpp"
 
+#include <iostream>
+
 void areaRatioThreshold (std::vector<std::vector<cv::Point> >& contours, std::vector<cv::RotatedRect>& boundedRects, int minArea, int maxArea, double areaRatio, double areaRatioMaxDeviation)
 {
     for (size_t i = 0; i < boundedRects.size(); ++i)
@@ -7,6 +9,10 @@ void areaRatioThreshold (std::vector<std::vector<cv::Point> >& contours, std::ve
         double boundedRectsArea = boundedRects[i].size.height * boundedRects[i].size.width;
         double contourArea = cv::contourArea(contours[i]);
 
+        std::cerr << "\n\n" << "Contour Area:          " << contourArea << "\n"
+			    << "Bounded Rects Area:    " << boundedRectsArea << "\n"
+			    << "areaRatio:             " << areaRatio << "\n"
+			    << "areaRatioMaxDeviation: " << areaRatioMaxDeviation << "\n";
         // Determine if the bounded boundedRects area is correct and
         // if the ratio between the contour area and rect's area is correct
         if (boundedRectsArea < minArea || 
@@ -25,8 +31,25 @@ void sideRatioThreshold (std::vector<std::vector<cv::Point> >& contours, std::ve
 {
     for (size_t i = 0; i < boundedRects.size(); ++i)
     {
+        double height = boundedRects[i].size.height;
+        double width = boundedRects[i].size.width;
+
+	// Swap height and width so that height is always longest
+	if (height < width)
+	{
+		double tmp = height;
+		height = width;
+		width = tmp;
+	}
+
+        std::cerr << "\n\n" << "Bounded Rects Height:   " << boundedRects[i].size.height << "\n"
+			    << "Bounded Rects Width:    " << boundedRects[i].size.width << "\n"
+			    << "Side Ratio:             " << sideRatio << "\n"
+			    << "sideRatioMaxDeviation:  " << sideRatioMaxDeviation << "\n"
+		            << "Contour                 " << contours[i][0].x << ", " << contours[i][0].y << "\n";
+
         // Determine if the ratio between the height and width is correct
-        if (std::abs((boundedRects[i].size.height / boundedRects[i].size.width) - sideRatio) > sideRatioMaxDeviation)
+        if (std::abs((height / width) - sideRatio) > sideRatioMaxDeviation)
         {
             contours.erase(contours.begin() + i);
             boundedRects.erase(boundedRects.begin() + i);
@@ -43,10 +66,14 @@ void angleThreshold (std::vector<std::vector<cv::Point> >& contours, std::vector
         double height = boundedRects[i].size.height;
         double width = boundedRects[i].size.width;
 
+        std::cerr << "\n\n" << "Bounded Rects Height: " << boundedRects[i].size.height << "\n"
+			    << "Bounded Rects Width:  " << boundedRects[i].size.width << "\n"
+			    << "Bounded Rects Angle:  " << boundedRects[i].angle << "\n"
+			    << "angleMaxDeviation:    " << angleMaxDeviation << "\n";
         // Determine the orientation based off of the longer side and 
         // correct it by subtracting 90 if the rect's angle is on its side
-        if ((width > height && (std::abs(boundedRects[i].angle) > angleMaxDeviation)) || 
-            (width < height && (std::abs(std::abs(boundedRects[i].angle) - 90) > angleMaxDeviation)))
+        if ((width < height && (std::abs(boundedRects[i].angle) > angleMaxDeviation)) || 
+            (width > height && (std::abs(std::abs(boundedRects[i].angle) - 90) > angleMaxDeviation)))
         {
             contours.erase(contours.begin() + i);
             boundedRects.erase(boundedRects.begin() + i);
