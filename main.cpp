@@ -242,6 +242,37 @@ int main (int argc, char *argv[])
   cv::VideoCapture cap;
   if (argc == 1)
   {
+    int fd;
+    if ((fd = open("/dev/video1", O_RDWR)) < 0)
+    {
+      perror("Failed to open /dev/video1");
+      exit(1);
+    }
+    struct v4l2_queryctrl queryctrl;
+    struct v4l2_control control;
+
+    // memset (&queryctrl, 0, sizeof(queryctrl));
+    // memset(&control, 0, sizeof(control));
+    //
+    // control.id = V4L2_CID_AUTOGAIN;
+    // control.value = false;
+    // ioctl(fd, VIDIOC_S_CTRL, &control);
+    //
+    memset (&queryctrl, 0, sizeof(queryctrl));
+    memset(&control, 0, sizeof(control));
+
+    control.id = V4L2_CID_EXPOSURE_AUTO;
+    control.value = 0;
+    ioctl(fd, VIDIOC_S_CTRL, &control);
+
+    memset (&queryctrl, 0, sizeof(queryctrl));
+    memset(&control, 0, sizeof(control));
+
+    control.id = V4L2_CID_EXPOSURE;
+    control.value = 1;
+    ioctl(fd, VIDIOC_S_CTRL, &control);
+
+    close (fd);
     ::std::cout << "Using camera at port " << camera::ID << "\n";
     cap = cv::VideoCapture (camera::ID);
   }
