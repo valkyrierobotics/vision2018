@@ -136,7 +136,7 @@ class CornerExtractor
   std::vector<cv::Point2f> getCorners();
 
  private:
-  void findGoodFeatures();
+  void findGoodCorners();
   void refineCorners();
   void getTopCorners();
   void startWindows();

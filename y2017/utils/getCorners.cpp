@@ -64,38 +64,30 @@ void CornerExtractor::update(cv::Mat& img,
 // }
 
 // Returns a vector of points that contains the four corners of a rectangle
-// by finding the points closest to each of the four corners of the image
-// Automatically refines the corners
-// Currently only supports MAX_GAME_PIECE_CORNERS points (rectangle)
+// by finding the best features.
+// Automatically refines the corners.
+// Currently only tested with four points (rectangle)
+// Returns empty vector when filter is not applied / successful.
 std::vector<cv::Point2f> CornerExtractor::getCorners()
 {
+#if CALIB && !STREAM
   // TODO: set this up with callbacks that somehow call update()
   startWindows();
+#endif
+
+  if (!(params_->applyFilter))
+      return std::vector<cv::Point2f>();
+
   // if (params_->applyFilter)
   {
-    // Find the approximate locations of the corners
-    // findApproxCorners();
-    findGoodFeatures();
+    findGoodCorners();
 
     // Refine the corners so that distances are absolute minima
-    refineCorners();
+    // refineCorners();
 
-    orderCorners();
+    // orderCorners();
 
     return corners_;
-    // for (size_t i = 0; i < MAX_GAME_PIECE_CORNERS; ++i)
-    // {
-    //   corners_.push_back((*pts_)[indices_[i]]);
-    // }
-    // // std::cout << "\n\n";
-    // // {
-    // //   cv::Mat img = cv::Mat::zeros(SCREEN_HEIGHT, SCREEN_WIDTH, CV_8UC3);
-    // //   std::vector<std::vector<cv::Point> > c;
-    // //   c.push_back(corners);
-    // //   drawContours(img, c, -1, cv::Scalar(0, 0, 255), 5, 8);
-    // //   cv::imshow("test", img);
-    // // }
-    // return corners_;
   }
 }
 
@@ -117,7 +109,7 @@ void CornerExtractor::startWindows()
   }
 }
 
-void CornerExtractor::findGoodFeatures()
+void CornerExtractor::findGoodCorners()
 {
   if (params_->qualityLevel == 0) params_->qualityLevel++;
   if (params_->blockSize == 0) params_->blockSize++;
@@ -131,7 +123,7 @@ void CornerExtractor::findGoodFeatures()
       params_->blockSize,
       params_->useHarrisDetector,
       params_->k);
-  std::cout << "** Number of corners detected: " << corners_.size() << "\n";
+  // std::cout << "** Number of corners detected: " << corners_.size() << "\n";
 }
 
 // Checks + or - numPointsToCheck points from the current corner
@@ -139,6 +131,7 @@ void CornerExtractor::findGoodFeatures()
 void CornerExtractor::refineCorners()
 {
   if (corners_.size() == 0) return;
+  if (imgGray_->empty()) return;
 
   cv::Mat img = imgGray_->clone();
   {
@@ -151,9 +144,9 @@ void CornerExtractor::refineCorners()
   cornerSubPix(*imgGray_, corners_, params_->winSize, params_->zeroZone, params_->criteria);
 
   // Print the corners
-  std::cout << "Center of Mass: (" << cm_->x << "," << cm_->y << ")\n";
-  for( size_t i = 0; i < corners_.size(); i++ )
-  { std::cout << " -- Refined Corner [" << i << "]  (" << corners_[i].x << "," << corners_[i].y << ")" << "\n"; }
+  // std::cout << "Center of Mass: (" << cm_->x << "," << cm_->y << ")\n";
+  // for( size_t i = 0; i < corners_.size(); i++ )
+  // { std::cout << " -- Refined Corner [" << i << "]  (" << corners_[i].x << "," << corners_[i].y << ")" << "\n"; }
 
   double maxNorm = 0;
   cv::Scalar color (255, 255, 255);
@@ -213,12 +206,12 @@ void CornerExtractor::orderCorners()
     cv::imshow("Angles", img);
   }
   std::vector<size_t> idx = sort_indexes(angles, comp_double);
-  {
-    std::cout << "Indexes: ";
-    for (auto i: idx)
-      std::cout << i << " ";
-    std::cout << "\n";
-  }
+  // {
+  //   std::cout << "Indexes: ";
+  //   for (auto i: idx)
+  //     std::cout << i << " ";
+  //   std::cout << "\n";
+  // }
   // reorder_destructive(idx.begin(), idx.end(), corners_.begin());
   std::vector<cv::Point> tmp;
   for (auto i : idx)

@@ -18,7 +18,7 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 // Measurements are in inches
-const double TOWER_HEIGHT = 11;
+const double TOWER_HEIGHT = 11.0;
 const double CAMERA_HEIGHT = 0.5;
 const double GAME_ELEMENT_WIDTH = 2;
 const double GAME_ELEMENT_HEIGHT = 5;
