@@ -14,10 +14,14 @@ void putData(cv::Mat& img, double distance, double yaw, double pitch)
 
 void drawContours(cv::Mat& img, std::vector<std::vector<cv::Point> >& contours, cv::Scalar& color)
 {
-	std::vector<cv::Vec4i> hierarchy;
-	
-    for(size_t i = 0; i < contours.size(); ++i)
-        cv::drawContours(img, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+    int thickness = 2;
+    // Draw all the contours
+    cv::drawContours(img, contours, -1, color, thickness, 8);
+
+	// std::vector<cv::Vec4i> hierarchy;
+    //
+    // for(size_t i = 0; i < contours.size(); ++i)
+    //     cv::drawContours(img, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
 }
 
 void drawBoundedRects(cv::Mat& img, std::vector<cv::RotatedRect>& boundedRects, cv::Scalar& color)
