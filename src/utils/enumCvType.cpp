@@ -1,4 +1,4 @@
-#include "logging/enumCvType.hpp"
+#include "utils/enumCvType.hpp"
 
 std::string enumCvType(cv::Mat& img)
 {	

@@ -1,4 +1,4 @@
-#include <filters/selectMode.hpp>
+#include "filters/selectMode.hpp"
 
 void selectMode(int &blur, int &color, int &dilate_erode, int &edge, int &laplacian, int &hough, int &shapeThreshold, int &merge, int& boundedRects)
 {

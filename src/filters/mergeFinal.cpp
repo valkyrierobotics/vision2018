@@ -1,5 +1,5 @@
 #include "filters/mergeFinal.hpp"
-#include "logging/enumCvType.hpp"
+#include "utils/enumCvType.hpp"
 
 void mergeFinal(cv::Mat& color_orig, cv::Mat& final_img, int weight1, int weight2)
 {
