@@ -1,3 +1,4 @@
+#include "utils/angles.hpp"
 
 double getYaw(double xDist, std::vector<cv::Point>& corners, cv::Point2f& mc)
 {
@@ -18,5 +19,5 @@ double getYaw(double xDist, std::vector<cv::Point>& corners, cv::Point2f& mc)
 
 double getPitch(double height, double hypotenuse)
 {
-	return (std::asin (height / hypotenuse) * 180 / PI);
+	return std::asin(height / hypotenuse) * 180 / PI;
 }
