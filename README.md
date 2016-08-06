@@ -1,8 +1,9 @@
-# MVRT Team 115's Robotic Vision Code for 2016.
+# Valkyrie Robotics's Computer Vision Code for 2016.
 
 ### Contributors
 - Min Hoo Lee
-- Nathan Ang
+- Michael Wan
+- Rahul Amara
+- Pravin Suranthiran
 - Jeremy Tien
 - Sahas Munamala
-- Michael Wan
