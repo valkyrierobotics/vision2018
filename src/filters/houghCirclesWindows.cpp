@@ -1,13 +1,14 @@
 #include "filters/houghCirclesWindows.hpp"
 
-void houghCirclesWindows(cv::Mat& img, int& hcMinRadius, int& hcMaxRadius, int& threshLow, int& threshHigh, int& visible, int& apply)
+void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool STREAM)
 {
 	if (visible)
 	{
 		cv::namedWindow("Hough Circles Editor", cv::WINDOW_AUTOSIZE);	
 		cv::createTrackbar("Apply Filter", "Hough Circles Editor", &apply, 1);
-		cv::createTrackbar("Min Radius", "Hough Circles Editor", &hcMaxRadius, 500);
-		cv::createTrackbar("Max Radius", "Hough Circles Editor", &hcMinRadius, 500);
+		cv::createTrackbar("Min Dist Between Circle Centers", "Hough Circles Editor", &minDist, img.rows);
+		cv::createTrackbar("Min Radius", "Hough Circles Editor", &maxRadius, img.rows / 2);
+		cv::createTrackbar("Max Radius", "Hough Circles Editor", &minRadius, img.rows / 2);
 	}
 	else
 	{
@@ -16,8 +17,8 @@ void houghCirclesWindows(cv::Mat& img, int& hcMinRadius, int& hcMaxRadius, int& 
 	}
 	if (apply)
 	{
-		houghCircles(img, hcMinRadius, hcMaxRadius, threshLow, threshHigh);
-        if (visible)
+		houghCircles(img, minDist, minRadius, maxRadius);
+        if (visible && !STREAM)
         {
             cv::namedWindow("Hough Circles Output", CV_WINDOW_AUTOSIZE);
             cv::imshow("Hough Circles Output", img);

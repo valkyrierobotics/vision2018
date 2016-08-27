@@ -5,7 +5,6 @@
 #include <math.h>
 
 double distance(cv::Point one, cv::Point two);
-double distance2D(double comp1, double comp2);
-double getShortestDistance (cv::Point2f rectPoints[4], double focalLen, int dist, int height)
+double getShortestDistance (cv::Point2f rectPoints[4], double widthInInches, double focalLen, int dist, int isCalib);
 
 #endif // DISTANCE_HPP

@@ -1,5 +1,4 @@
-#include "include/utils/netThread.hpp"
-
+#include "utils/netThread.hpp"
 
 void sendData (udp_client_server::udp_client& client)
 {
@@ -13,7 +12,7 @@ void sendData (udp_client_server::udp_client& client)
         {
             clock_t start = clock();
             // Check if the angles are not NaN or inf and within restrictions
-            //if ((buff[0] == RESUME_SIGNAL || buff[0] == START_SIGNAL) && std::isfinite(yaw) && std::isfinite(pitch) && std::abs(yaw) < 30.0 && pitch < 90.0)
+#if 0
             if ((buff[0] == GET_SIGNAL || buff[0] == START_SIGNAL) && std::isfinite(yaw) && std::isfinite(pitch) && std::abs(yaw) < 30.0 && pitch < 90.0)
             {
 
@@ -25,6 +24,7 @@ void sendData (udp_client_server::udp_client& client)
             {
                 std::cerr << "Data not sent, buff = " << buff << "\n";
             }
+#endif
 
             clock_t end = clock();
             double timeElapsed = (double) (end - start) / CLOCKS_PER_SEC;	
@@ -66,24 +66,3 @@ void receiveData (udp_client_server::udp_server& server)
             std::cerr << "PAUSE_SIGNAL\n";
     }
 }
-
-void receivePing (udp_client_server::udp_server& server)
-{
-    int maxBufferSize = 1;
-    int maxWaitSec = 1;
-    char buff [] = "0";
-    while (buff[0] != START_SIGNAL)
-    {
-        // Receive data from non-blocking server
-        server.timed_recv(buff, maxBufferSize, maxWaitSec);
-    }
-    std::cerr << "Received start signal: " << buff << "\n";
-}
-
-void sendPing (udp_client_server::udp_client& client)
-{
-    std::string msg = "@";
-    printf("Sent Data: %s\n", msg.c_str());
-	client.send(msg.c_str(), strlen(msg.c_str()));
-}
-

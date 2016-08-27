@@ -6,6 +6,6 @@
 
 #include "dilateErode.hpp"
 
-void dilateErodeWindows(cv::Mat &output, cv::Mat &element, int &holes, int &noise, int &apply, bool visible);
+void dilateErodeWindows(cv::Mat &output, cv::Mat &element, int &holes, int &noise, int &apply, bool visible, const bool STREAM);
 
 #endif // DILATE_ERODE_WINDOWS_HPP

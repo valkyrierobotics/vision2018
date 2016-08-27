@@ -2,8 +2,7 @@
 #define SELECT_MODE_HPP
 
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
-void selectMode(int &blur, int &color, int &dilate_erode, int &edge, int &laplacian, int &hough, int &depth_dist, int &merge, int& boundedRects);
+void selectMode(int &blur, int &colorThreshold, int &dilateErode, int &edge, int &laplacian, int &houghLines, int& houghCircles, int& uShapeThreshold, int &sideRatioThreshold, int& areaRatioThreshold, int& angleThreshold, int &merge);
 
 #endif // SELECT_MODE_HPP

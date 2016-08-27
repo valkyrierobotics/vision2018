@@ -1,6 +1,6 @@
 #include "filters/houghLinesWindows.hpp"
 
-void houghLinesWindows(cv::Mat &output, int &rho, int &theta, int &threshold, int &lineMin, int &maxGap, int &apply, bool visible)
+void houghLinesWindows(cv::Mat &output, int &rho, int &theta, int &threshold, int &lineMin, int &maxGap, int &apply, bool visible, const bool STREAM)
 {
 	if (visible)
    	{
@@ -21,7 +21,7 @@ void houghLinesWindows(cv::Mat &output, int &rho, int &theta, int &threshold, in
 	if (apply)
 	{
 		houghLines(output, rho, theta, threshold, lineMin, maxGap);
-        if (visible)
+        if (visible && !STREAM)
         {
             cv::namedWindow("Hough Lines Output", cv::WINDOW_AUTOSIZE);
             cv::imshow("Hough Lines Output", output);

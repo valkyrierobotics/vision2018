@@ -3,6 +3,6 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-void laplacianSharpen(cv::Mat &image, int ddepth, int sharpen_ksize, int scale, int delta);
+void laplacianSharpen(cv::Mat &img, int ksize, int scale, int delta);
 
 #endif // LAPLACIAN_SHARPEN_HPP

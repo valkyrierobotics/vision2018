@@ -3,7 +3,6 @@ images/*fps*
 images/mjpgs/
 *.mjpeg
 
-
 build/
 obj/
 .build_dir

@@ -6,6 +6,6 @@
 
 #include "houghLines.hpp"
 
-void houghLinesWindows(cv::Mat &output, int &rho, int &theta, int &threshold, int &lineMin, int &maxGap, int &apply, bool visible);
+void houghLinesWindows(cv::Mat &output, int &rho, int &theta, int &threshold, int &lineMin, int &maxGap, int &apply, bool visible, const bool STREAM);
 
 #endif // HOUGH_LINES_WINDOWS_HPP

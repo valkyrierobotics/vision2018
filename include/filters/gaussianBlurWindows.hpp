@@ -6,6 +6,6 @@
 
 #include "gaussianBlur.hpp"
 
-void gaussianBlurWindows(cv::Mat &output, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible);
+void gaussianBlurWindows(cv::Mat &img, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible, const bool STREAM);
 
 #endif // GAUSSIAN_BLUR_WINDOWS_HPP

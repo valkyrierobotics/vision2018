@@ -1,7 +1,7 @@
 #include "filters/mergeFinalWindows.hpp"
 
 // 8UC3 color, 8UC1 depth
-void mergeFinalWindows(cv::Mat& color_orig, cv::Mat& final_img, int& weight1, int& weight2, int& apply, int& visible)
+void mergeFinalWindows(cv::Mat& img1, cv::Mat& img2, int& weight1, int& weight2, int& apply, bool visible, const bool STREAM)
 {
 	if (visible)
 	{
@@ -18,11 +18,11 @@ void mergeFinalWindows(cv::Mat& color_orig, cv::Mat& final_img, int& weight1, in
 	}
 	if (apply)	
 	{
-		mergeFinal(color_orig, final_img, weight1, weight2);
-        if (visible)
+		mergeFinal(img1, img2, weight1, weight2);
+        if (visible && !STREAM)
         {
             cv::namedWindow("Merge Final Output", cv::WINDOW_AUTOSIZE);
-            cv::imshow("Merge Final Output", final_img);
+            cv::imshow("Merge Final Output", img2);
         }
 	}
 	else

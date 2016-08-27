@@ -6,6 +6,6 @@
 
 #include "cannyEdgeDetect.hpp"
 
-void cannyEdgeDetectWindows(cv::Mat &output, int &threshLow, int &threshHigh, int &apply, bool visible);
+void cannyEdgeDetectWindows(cv::Mat &img, int &threshLow, int &threshHigh, int &apply, bool visible, const bool STREAM);
 
 #endif // CANNY_EDGE_DETECT_WINDOWS_HPP

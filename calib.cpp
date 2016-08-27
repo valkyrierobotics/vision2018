@@ -480,11 +480,9 @@ int main( int argc, char *argv[])
 	int threshLow = 100;
 	int threshHigh = 245;
 	
-	// laplaci
+	// laplacian paraeters
 	int laplacian_ksize = 3;
-	// optional scale value added to image
 	int scale = 1;
-	// optional delta value added to image
 	int delta = 0;
 	int ddepth = CV_16S;
 	
@@ -519,22 +517,6 @@ int main( int argc, char *argv[])
     int sideT = 100;
     int areaT = 20;
     int angleT = 40;
-
-	std::cerr << "\n";
-    std::cerr << " =========== FILTER LIST =========== " << "\n";
-    std::cerr << "|                                   |" << "\n";
-    std::cerr << "| (0) No Filter                     |" << "\n";
-    std::cerr << "| (1) Gaussian Blur Filter          |" << "\n";
-    std::cerr << "| (2) HSV Color Filter              |" << "\n";
-    std::cerr << "| (3) Dilate and Erode Filter       |" << "\n";
-    std::cerr << "| (4) Canny Edge Detection Filter   |" << "\n";
-    std::cerr << "| (5) Laplacian Sharpen Filter      |" << "\n";
-    std::cerr << "| (6) Hough Lines Filter            |" << "\n";
-    std::cerr << "| (7) Merge Final Outputs           |" << "\n";
-    std::cerr << "| (8) Distance and Shooting Angles  |" << "\n";
-    std::cerr << "|                                   |" << "\n";
-    std::cerr << " =================================== " << "\n";
-    std::cerr << "\n";
 
     std::cerr << "\n";
     std::cerr << " ============== NOTICE ============= " << "\n";

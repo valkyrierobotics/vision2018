@@ -1,11 +1,10 @@
 #include "filters/gaussianBlurWindows.hpp"
 
-void gaussianBlurWindows(cv::Mat &output, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible)
+void gaussianBlurWindows(cv::Mat &img, int &blur_ksize, int &sigmaX, int &sigmaY, int &apply, bool visible, const bool STREAM)
 {
 	if (visible)
    	{
 		cv::namedWindow("Gaussian Blur Editor", cv::WINDOW_AUTOSIZE);
-
 		cv::createTrackbar("Apply Filter", "Gaussian Blur Editor", &apply, 1);
 		cv::createTrackbar("Kernel Size", "Gaussian Blur Editor", &blur_ksize, 10);
 		cv::createTrackbar("Sigma X", "Gaussian Blur Editor", &sigmaX, 100);
@@ -18,11 +17,12 @@ void gaussianBlurWindows(cv::Mat &output, int &blur_ksize, int &sigmaX, int &sig
 	}
 	if (apply)
 	{
-		gaussianBlur(output, blur_ksize, sigmaX, sigmaY);
-        if (visible)
+		gaussianBlur(img, blur_ksize, sigmaX, sigmaY);
+        if (visible && !STREAM)
         {
-            cv::namedWindow("Gaussian Blur Output", cv::WINDOW_AUTOSIZE);
-            cv::imshow("Gaussian Blur Output", output);
+            //cv::namedWindow("Gaussian Blur Output", cv::WINDOW_AUTOSIZE);
+            //cv::imshow("Gaussian Blur Output", img);
+            cv::imshow("Gaussian Blur Editor", img);
         }
 	}
 	else

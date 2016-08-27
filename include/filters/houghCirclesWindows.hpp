@@ -4,6 +4,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-void houghCirclesWindows(cv::Mat& img, int& hcMinRadius, int& hcMaxRadius, int& threshLow, int& threshHigh, int& visible, int& apply);
+#include "houghCircles.hpp"
+
+void houghCirclesWindows(cv::Mat& img, int& minDist, int& minRadius, int& maxRadius, int& apply, bool visible, const bool STREAM);
 
 #endif // HOUGH_CIRCLES_WINDOWS_HPP

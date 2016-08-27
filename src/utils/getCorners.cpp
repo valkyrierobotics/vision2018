@@ -20,7 +20,7 @@ std::vector<cv::Point> getCorners (std::vector<cv::Point>& pts, int screenWidth,
 	corners.push_back(tRight);
 	corners.push_back(bRight);
 	
-	for (int i = 0; i < pts.size(); i++)
+	for (size_t i = 0; i < pts.size(); ++i)
 	{
 		if (distance(pts[i], bLeft) < bLeftD)
 		{
@@ -43,10 +43,6 @@ std::vector<cv::Point> getCorners (std::vector<cv::Point>& pts, int screenWidth,
 			corners.at(3) = pts[i];
 		}
 	}
-	// Draw the corners
-	for (int i = 0; i < 4; i++)
-	{
-		cv::circle(src, corners[i], 5, cv::Scalar(255, 100, 100));
-	}
+
 	return corners;
 }
