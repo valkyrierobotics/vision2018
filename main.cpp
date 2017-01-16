@@ -1,5 +1,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include <string>
 #include <stdio.h>
@@ -72,6 +73,7 @@ cv::Scalar PURPLE (255, 0, 255);
 cv::Scalar LIGHT_GREEN (255, 100, 100);
 cv::Scalar RED (0, 0, 255);
 cv::Scalar YELLOW (0, 255, 255);
+
 
 int main (int argc, char *argv[])
 {
@@ -218,6 +220,7 @@ int main (int argc, char *argv[])
 	std::cerr << " ============== NOTICE ============= " << "\n";
 	std::cerr << "|                                   |" << "\n";
 	std::cerr << "| Press 'q' to quit without saving  |" << "\n";
+    std::cerr << "| Press 's' to save parameters      |" << "\n";
 	std::cerr << "| Press ' ' to pause                |" << "\n";
 	std::cerr << "|                                   |" << "\n";
 	std::cerr << " =================================== " << "\n";
@@ -240,6 +243,88 @@ int main (int argc, char *argv[])
 		// Press space to pause program, then any key to resume
 		if (kill == ' ')
 			cv::waitKey(0);
+
+        // Press s to save values into FileStorage
+        if (kill == 's')
+        {
+            FileStorage fs("config.yml", FileStorage::WRITE);
+
+            fs << "{"
+
+	            << "Is Blur Window Open" << blur
+                << "Is Color Window Open" << color
+                << "Is Dilate Erode Window Open" << dilateErode
+                << "Is Edge Window Open" << edge
+                << "Is Laplacian Window Open" << laplacian
+                << "Is HoughLines Window Open" << houghLines
+                << "Is HoughCircles Window Open" << houghCircles
+                << "Is uShapeThreshold Window Open" << uShapeThresholdWindow
+                << "Is sideRatioThreshold Window Open" << sideRatioThresholdWindow
+                << "Is areaRatioThreshold Window Open" << areaRatioThresholdWindow
+                << "Is angleThreshold Window Open" << angleThresholdWindow
+                << "Is drawStats Open" << drawStats
+                << "Is merge Open" << merge
+
+                << "Apply Blur" << applyBlur
+                << "Apply Color" << applyColor
+                << "Apply DilateErode" << applyDilateErode
+                << "Apply Edge" << applyEdge
+                << "Apply Laplacian" << applyLaplacian
+                << "Apply HoughLines" << applyHoughLines
+                << "Apply HoughCircles" << applyHoughCircles
+                << "Apply UShapeRatioThreshold" << applyUShapeThreshold
+                << "Apply SideRatioThreshold" << applySideRatioThreshold
+                << "Apply AreaRatioThreshold" << applyAreaRatioThreshold
+                << "Apply AngleThreshold" << applyAngleThreshold
+                << "Apply Merge" << applyMerge
+
+                << "Gaussian Blur Kernel Size" << blue_ksize
+                << "Guassian Blur Sigma X" << sigmaX
+                << "Guassian Blur Sigma Y" << sigmaY
+
+                << "Hue Minimum Threshold" << hMin
+                << "Hue Maximum Threshold" << hMax
+                << "Saturation Minimum Threshold" << sMin
+                << "Saturation Maximum Threshold" << sMax
+                << "Value Minimum Threshold" << vMin
+                << "Value Maximum Threshold" << vMax
+
+                << "Dilate Erode Holes" << holes
+                << "Dilate Erode Noise" << noise
+                << "Dilate Erode Size" << size
+
+                << "Canny Lower Threshold" << threshLow
+                << "Canny Higher Threshold" << threshHigh
+
+                << "Laplacian Kernel Size" << laplacian_ksize
+                << "Laplacian Scale" << scale
+                << "Laplacian Delta" << delta
+
+                << "HoughLines Rho" << rho
+                << "HoughLines Theta" << theta
+                << "HoughLines Threshold" <<  threshold
+                << "HoughLines LineMin" << lineMin
+                << "HoughLines MaxGap" <<  maxGap
+
+                << "HoughCircles Minimum Distance" << hcMinDist
+                << "HoughCircles Minimum Radius" << hcMinRadius
+                << "HoughCircles Maximum Radius" << hcMaxRadius
+
+                << "Merge Weight 1" << mergeWeight1
+                << "Merge Weight 2" <<  mergeWeight2
+
+	            << "Side Ratio Parameter" << sideRatioParam
+                << "Side Ratio Parameter" << sideRatioParam
+                << "Area Ratio Parameter" << areaRatioParam
+                << "Minimum Area Parameter" << minAreaParam
+                << "Maximum Area Parameter" << maxAreaParam
+                << "Side Ratio Maximum Deviation Parameter" << sideRatioMaxDeviationParam
+                << "Area Ratio Maximum Deviation Parameter" << areaRatioMaxDeviationParam
+                << "Angle Max Deviation Parameter" << angleMaxDeviationParam
+
+             << "}";
+            fs.release();
+        }
 
 		if (FPS) start = std::chrono::high_resolution_clock::now();
 		if (argc > 2)
@@ -376,6 +461,7 @@ int main (int argc, char *argv[])
 		    avg += fps;
 		    fpsTick++;
 		}
+        
 		kill = cv:: waitKey(5);
 	}
 	return 0;	
