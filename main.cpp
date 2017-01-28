@@ -45,7 +45,7 @@ const bool FPS = true;
 // Calibrating with windows instead of deployment
 const bool CALIB = true;
 // Streaming to mjpg-streamer instead of cv::imshow
-const bool STREAM = true; 
+const bool STREAM = false; 
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -74,6 +74,128 @@ cv::Scalar LIGHT_GREEN (255, 100, 100);
 cv::Scalar RED (0, 0, 255);
 cv::Scalar YELLOW (0, 255, 255);
 
+// Checks if a matrix is a valid rotation matrix.
+bool isRotationMatrix(cv::Mat& R)
+{
+    cv::Mat Rt;
+    transpose(R, Rt);
+    cv::Mat shouldBeIdentity = Rt * R;
+    cv::Mat I = cv::Mat::eye(3,3, shouldBeIdentity.type());
+     
+    return  norm(I, shouldBeIdentity) < 1e-6;
+}
+ 
+float toDeg (float rad)
+{
+    return rad * 180 / PI;
+}
+
+// Calculates rotation matrix to euler angles
+// The order is (pitch, yaw, roll)
+// The result is the same as MATLAB except the order
+// of the euler angles ( x and z are swapped ).
+cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R)
+{
+    assert(isRotationMatrix(R));
+
+    float sy = sqrt(R.at<double>(0,0) * R.at<double>(0,0) +  R.at<double>(1,0) * R.at<double>(1,0) );
+    bool singular = sy < 1e-6; // If
+    float x, y, z;
+    if (!singular)
+    {
+        x = atan2(R.at<double>(2,1) , R.at<double>(2,2));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = atan2(R.at<double>(1,0), R.at<double>(0,0));
+    }
+    else
+    {
+        x = atan2(-R.at<double>(1,2), R.at<double>(1,1));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = 0;
+    }
+    return cv::Vec3f(toDeg(x), toDeg(y), toDeg(z));
+    // return Vec3f(x, y, z);
+}
+
+// Precondition: input image should be grayscale and corners should be a rect
+// Return a vector of the angular displacement of the camera from the target
+// in degrees from -180 < theta < 180.
+// Return (-1.0, -1.0, -1.0) on failure
+cv::Vec3f getAngularDisplacement(cv::Mat img,
+        std::vector<cv::Point> corners,
+        char* cameraConfigFile)
+{
+    if (corners.size() != 4) return cv::Vec3f (-1.0, -1.0, -1.0);
+
+    cv::FileStorage fs;
+    fs.open(cameraConfigFile, cv::FileStorage::READ);
+	// Read camera matrix and distortion coefficients from file
+
+    cv::Mat intrinsics, distortion;
+	fs["Camera_Matrix"] >> intrinsics;
+	fs["Distortion_Coefficients"] >> distortion;
+
+	// Close the input file
+	fs.release();
+
+    std::vector<cv::Point2f> projectedAxesPoints;
+    std::vector<cv::Point3f> targetPoints, axesPoints;
+
+	axesPoints.push_back(cv::Point3f(0.0, 0.0, 0.0));
+	axesPoints.push_back(cv::Point3f(5.0, 0.0, 0.0));
+	axesPoints.push_back(cv::Point3f(0.0, 5.0, 0.0));
+	axesPoints.push_back(cv::Point3f(0.0, 0.0, 5.0));
+
+    // Bottom left, top left, top right, bottom right
+    targetPoints.push_back(cv::Point3f(0.0, 0.0, 0.0));
+    targetPoints.push_back(cv::Point3f(1.0, 0.0, 0.0));
+    targetPoints.push_back(cv::Point3f(1.0, 1.0, 0.0));
+    targetPoints.push_back(cv::Point3f(0.0, 1.0, 0.0));
+
+    cv::Mat rmat = cv::Mat(cv::Size(3, 1), CV_64F);
+    cv::Mat tmat = cv::Mat(cv::Size(3, 1), CV_64F);
+
+    // Find the 2D pose estimations in vector representations
+    // (pitch, yaw, roll) and (x, y, z) of the target
+    // std::cerr << corners.size() << ", " << targetPoints.size() << "\n";
+    // std::cerr << intrinsics << "\n" << distortion << "\n";
+
+    // Convert the corners into 3 dimensions for solvePnP
+    std::vector<cv::Point2f> cornerPoints;
+    for (int i = 0; i < corners.size(); ++i)
+        cornerPoints.push_back(cv::Point2f(corners[i].x, corners[i].y));
+
+    solvePnP(targetPoints, cornerPoints, intrinsics, distortion, rmat, tmat, false);
+
+    // Project the axes onto the image
+    cv::projectPoints(axesPoints, rmat, tmat, intrinsics, distortion, projectedAxesPoints);
+
+    // Change the vectors to matrices
+    cv::Rodrigues(rmat, rmat);
+    cv::Rodrigues(tmat, tmat);
+
+    cv::Vec3f rotAngles = rotationMatrixToEulerAngles(rmat);
+
+    // Phi is the heading (angle between normal line to camera and line to target)
+    float phi = toDeg(atan(tmat.at<double>(0, 0) / tmat.at<double>(2, 0)));
+
+    // Put the angle measurements on the image
+    char str[30];
+    sprintf(str, "(%.2f, %.2f, %.2f)", rotAngles[0], rotAngles[1], rotAngles[2]);
+    cv::putText(img, str, cv::Point(10, 430), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(0, 255, 0), 1, 8, false);
+    sprintf(str, "Phi: %.2f", phi);
+    cv::putText(img, str, cv::Point(10, 450), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(0, 255, 0), 1, 8, false);
+
+    // Theta - Phi is the actual angular displacement
+    sprintf(str, "Theta - Phi: %.2f", rotAngles[1] - phi);
+    cv::putText(img, str, cv::Point(10, 470), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(0, 255, 0), 1, 8, false);
+
+    // Draw the axes of rotation at the bottom left corner
+    cv::circle(img, projectedAxesPoints[0], 4, cv::Scalar(0, 0, 255), -1);
+    cv::line(img, projectedAxesPoints[0], projectedAxesPoints[1], cv::Scalar(0, 0, 255), 2);
+    cv::line(img, projectedAxesPoints[0], projectedAxesPoints[2], cv::Scalar(0, 255, 0), 2);
+    cv::line(img, projectedAxesPoints[0], projectedAxesPoints[3], cv::Scalar(255, 0, 0), 2);
+}
 
 int main (int argc, char *argv[])
 {
@@ -113,9 +235,9 @@ int main (int argc, char *argv[])
 	int applyHoughLines = 0;
 	int applyHoughCircles = 0;
 	int applyUShapeThreshold = 0;
-	int applySideRatioThreshold = 0;
-	int applyAreaRatioThreshold = 0;
-	int applyAngleThreshold = 0;
+	int applySideRatioThreshold = 1;
+	int applyAreaRatioThreshold = 1;
+	int applyAngleThreshold = 1;
 	int applyMerge = 1;
 
 	// gaussianBlur parameters
@@ -125,10 +247,10 @@ int main (int argc, char *argv[])
 
 	// hsvColorThreshold parameters
 	int hMin = 0;
-	int hMax = 360;
+	int hMax = 70;
 	int sMin = 0;
-	int sMax = 100;
-	int vMin = 70;
+	int sMax = 30;
+	int vMin = 65;
 	int vMax = 100;
 	int debugMode = 0;
 	// 0 is none, 1 is bitAnd between h, s, and v
@@ -202,6 +324,10 @@ int main (int argc, char *argv[])
 	int isFocalLengthCalib = 0;
 	double focalLength = 600;
 
+	// Angular displacement parameters
+	cv::Vec3f angleVec;
+	char* cameraConfigFile = "out_camera_data.xml";
+
 	udp_client_server::udp_client client(TARGET_ADDR, UDP_PORT);
 	udp_client_server::udp_server server(HOST_ADDR, UDP_PORT);
 
@@ -247,7 +373,7 @@ int main (int argc, char *argv[])
         // Press s to save values into FileStorage
         if (kill == 's')
         {
-            FileStorage fs("config.yml", FileStorage::WRITE);
+            cv::FileStorage fs("logs/config.yml", cv::FileStorage::WRITE);
 
             fs << "{"
 
@@ -278,7 +404,7 @@ int main (int argc, char *argv[])
                 << "Apply AngleThreshold" << applyAngleThreshold
                 << "Apply Merge" << applyMerge
 
-                << "Gaussian Blur Kernel Size" << blue_ksize
+                << "Gaussian Blur Kernel Size" << blur_ksize
                 << "Guassian Blur Sigma X" << sigmaX
                 << "Guassian Blur Sigma Y" << sigmaY
 
@@ -398,7 +524,7 @@ int main (int argc, char *argv[])
 
 		boundedRects = getBoundedRects(contours);
 
-        if (CALIB && STREAM)
+        if (CALIB)
         {
 		    uShapeThresholdWindows(img, contours, boundedRects, minDistFromContours, maxDistFromContours, applyUShapeThreshold, uShapeThresholdWindow, STREAM);
 		    sideRatioThresholdWindows(img, contours, boundedRects, sideRatioParam, sideRatioMaxDeviationParam, applySideRatioThreshold, sideRatioThresholdWindow, STREAM);
@@ -421,6 +547,7 @@ int main (int argc, char *argv[])
 
 		    // Find the corners of the target's contours
 		    std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
+            angleVec = getAngularDisplacement(img, corners, cameraConfigFile);
 		    cv::Point2f mc = getCenterOfMass(contours[goalInd]);
 
 		    double hypotenuse = getShortestDistance(rectPoints, GAME_ELEMENT_WIDTH, focalLength, CALIB_DISTANCE, isFocalLengthCalib);
@@ -439,11 +566,15 @@ int main (int argc, char *argv[])
                 cv::circle(img, corners[i], 5, LIGHT_GREEN);
         }
 
-        if (CALIB && STREAM)
+        if (CALIB)
         {
-            if (uShapeThresholdWindow || sideRatioThresholdWindow || areaRatioThresholdWindow || angleThresholdWindow) mjpgStream(img);
+            if (uShapeThresholdWindow || sideRatioThresholdWindow || areaRatioThresholdWindow || angleThresholdWindow) 
+            {
+                cv::imshow("Threshold Output", img);
+                if (STREAM) mjpgStream(img);
+            }
             mergeFinalWindows(rgb, img, mergeWeight1, mergeWeight2, applyMerge, merge, STREAM);
-            if (merge) mjpgStream(img);
+            if (merge && STREAM) mjpgStream(img);
         }
         else
         {
