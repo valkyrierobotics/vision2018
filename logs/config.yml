@@ -1,0 +1,62 @@
+%YAML:1.0
+Parameters:
+   Is Blur Window Open: 0
+   Is Color Window Open: 0
+   Is Dilate Erode Window Open: 0
+   Is Edge Window Open: 0
+   Is Laplacian Window Open: 0
+   Is HoughLines Window Open: 0
+   Is HoughCircles Window Open: 0
+   Is uShapeThreshold Window Open: 0
+   Is sideRatioThreshold Window Open: 0
+   Is areaRatioThreshold Window Open: 0
+   Is angleThreshold Window Open: 0
+   Is drawStats Open: 0
+   Is merge Open: 0
+   Apply Blur: 1
+   Apply Color: 1
+   Apply DilateErode: 0
+   Apply Edge: 0
+   Apply Laplacian: 0
+   Apply HoughLines: 0
+   Apply HoughCircles: 0
+   Apply UShapeRatioThreshold: 0
+   Apply SideRatioThreshold: 1
+   Apply AreaRatioThreshold: 1
+   Apply AngleThreshold: 0
+   Apply Merge: 1
+   Gaussian Blur Kernel Size: 5
+   Guassian Blur Sigma X: 10
+   Guassian Blur Sigma Y: 10
+   Hue Minimum Threshold: 270
+   Hue Maximum Threshold: 360
+   Saturation Minimum Threshold: 30
+   Saturation Maximum Threshold: 100
+   Value Minimum Threshold: 30
+   Value Maximum Threshold: 90
+   Dilate Erode Holes: 0
+   Dilate Erode Noise: 0
+   Dilate Erode Size: 1
+   Canny Lower Threshold: 100
+   Canny Higher Threshold: 245
+   Laplacian Kernel Size: 3
+   Laplacian Scale: 1
+   Laplacian Delta: 0
+   HoughLines Rho: 1
+   HoughLines Theta: 180
+   HoughLines Threshold: 50
+   HoughLines LineMin: 50
+   HoughLines MaxGap: 10
+   HoughCircles Minimum Distance: 60
+   HoughCircles Minimum Radius: 116
+   HoughCircles Maximum Radius: 212
+   Merge Weight 1: 100
+   Merge Weight 2: 100
+   Side Ratio Parameter: 270
+   Side Ratio Parameter: 270
+   Area Ratio Parameter: 80
+   Minimum Area Parameter: 800
+   Maximum Area Parameter: 10000
+   Side Ratio Maximum Deviation Parameter: 80
+   Area Ratio Maximum Deviation Parameter: 90
+   Angle Max Deviation Parameter: 20

@@ -76,11 +76,12 @@ Vec3f rotationMatrixToEulerAngles(Mat &R)
 
 
 // Main -------------------------------------------------------------------------------------------
-int main()
+int main(int argc, char* argv[])
 {
 	
 	//set up a FileStorage object to read camera params from file
 	FileStorage fs;
+    if (argc > 1) filename = argv[1];
 	fs.open(filename, FileStorage::READ);
 	// read camera matrix and distortion coefficients from file
 	Mat intrinsics, distortion;
@@ -104,18 +105,18 @@ int main()
 
 
 	//generate vectors for the points on the chessboard
-	for (int i=0; i<boardWidth; i++)
+	for (int i = -boardWidth / 2.0; i < boardWidth / 2.0; i++)
 	{
-		for (int j=0; j<boardHeight; j++)
+		for (int j=-boardHeight / 2.0; j < boardHeight / 2.0; j++)
 		{
 			boardPoints.push_back( Point3f( double(i), double(j), 0.0) );
 		}
 	}
 	//generate points in the reference frame
 	framePoints.push_back( Point3f( 0.0, 0.0, 0.0 ) );
-	framePoints.push_back( Point3f( 5.0, 0.0, 0.0 ) );
-	framePoints.push_back( Point3f( 0.0, 5.0, 0.0 ) );
-	framePoints.push_back( Point3f( 0.0, 0.0, 5.0 ) );
+	framePoints.push_back( Point3f( 3.0, 0.0, 0.0 ) );
+	framePoints.push_back( Point3f( 0.0, 3.0, 0.0 ) );
+	framePoints.push_back( Point3f( 0.0, 0.0, 3.0 ) );
 
 
 	//set up VideoCapture object to acquire the webcam feed from location 0 (default webcam location)
@@ -139,13 +140,16 @@ int main()
 		 //detect chessboard corners
 		 bool found = findChessboardCorners(gray, cbSize, imagePoints, CALIB_CB_FAST_CHECK);
          // if (found) cout << imagePoints << "\n";
-		 // if (found) drawChessboardCorners(webcamImage, cbSize, imagePoints, found);
+		 drawChessboardCorners(webcamImage, cv::Size(boardHeight, boardWidth), imagePoints, found);
 
 		 //find camera orientation if the chessboard corners have been found
 		 if ( found )
 		 {
              // imagePoints will store the pixel coordinates of the board's squares
 			 solvePnP( boardPoints, imagePoints, intrinsics, distortion, rvec, tvec, false );
+
+			 // Project the axes onto the image
+			 projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
 
              cv::Mat rmat, tmat;
 
@@ -167,9 +171,6 @@ int main()
              sprintf(str, "Theta - Phi: %.2f", rotAngles[1] - phi);
              cv::putText(webcamImage, str, cv::Point(10, 470), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(0, 255, 0), 1, 8, false);
 
-			 // Project the axes onto the image
-			 projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
-
 			 //DRAWING
 			 // Draw the origin of the axes on the image
 			 circle(webcamImage, imageFramePoints[0], 4 ,CV_RGB(255,0,0) );
@@ -184,8 +185,8 @@ int main()
              //
              // Draw the projected axes
 			 line(webcamImage, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 2 );
-			 // line(webcamImage, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 2 );
-			 // line(webcamImage, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 2 );
+			 line(webcamImage, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 2 );
+			 line(webcamImage, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 2 );
 
 			 //show the pose estimation data
              /*
