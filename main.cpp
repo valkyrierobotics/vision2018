@@ -1,7 +1,4 @@
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -109,7 +106,7 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R)
 {
     if (!isRotationMatrix(R))
     {
-        std::cerr << "NOT A ROTATION MATRIX\n";
+        std::cout << "NOT A ROTATION MATRIX\n";
         return cv::Vec3f (-1.0, -1.0, -1.0);
     }
 
@@ -144,11 +141,35 @@ bool containsNaN(cv::Mat& m)
     return false;
 }
 
+// The order is (pitch, yaw, roll)
+void getEulerAngles(cv::Mat &rotCameraMat,cv::Vec3d& eulerAngles)
+{
+    cv::Mat cameraMat,rotMat,transVect,rotMatX,rotMatY,rotMatZ;
+    double* _r = rotCameraMat.ptr<double>();
+    double projMat[12] = {_r[0],_r[1],_r[2],0,
+                          _r[3],_r[4],_r[5],0,
+                          _r[6],_r[7],_r[8],0};
+
+    cv::decomposeProjectionMatrix(cv::Mat(3,4,CV_64FC1, projMat),
+                               cameraMat,
+                               rotMat,
+                               transVect,
+                               rotMatX,
+                               rotMatY,
+                               rotMatZ,
+                               eulerAngles);
+}
+
+int solvePnPFlag = 0;
+int useExtrinsicGuess = 0;
+int useRansac = 0;
+
 // Precondition: input image should be grayscale and corners should be a rect
 // Return a vector of the angular displacement of the camera from the target
 // in degrees from -180 < theta < 180.
 // Return (-1.0, -1.0, -1.0) on failure
 cv::Vec3f getAngularDisplacement(cv::Mat& img,
+        cv::Mat& rvec, cv::Mat& tvec,
         std::vector<cv::Point>& corners,
         std::string& cameraConfigFile,
         float targetWidth, float targetHeight)
@@ -170,9 +191,9 @@ cv::Vec3f getAngularDisplacement(cv::Mat& img,
     std::vector<cv::Point3f> targetPoints, axesPoints;
 
     axesPoints.push_back(cv::Point3f(0.0, 0.0, 0.0));
-    axesPoints.push_back(cv::Point3f(5.0, 0.0, 0.0));
-    axesPoints.push_back(cv::Point3f(0.0, 5.0, 0.0));
-    axesPoints.push_back(cv::Point3f(0.0, 0.0, 5.0));
+    axesPoints.push_back(cv::Point3f(3.0, 0.0, 0.0));
+    axesPoints.push_back(cv::Point3f(0.0, 3.0, 0.0));
+    axesPoints.push_back(cv::Point3f(0.0, 0.0, 3.0));
 
     // Bottom left, top left, top right, bottom right
     // targetPoints.push_back(cv::Point3f(0.0, 0.0, 0.0));
@@ -190,12 +211,14 @@ cv::Vec3f getAngularDisplacement(cv::Mat& img,
     // targetPoints.push_back(cv::Point3f(1.0, 0.0, 0.0));
     // targetPoints.push_back(cv::Point3f(1.0, 1.0, 0.0));
 
-    // cv::Mat rmat, tmat;
+    // cv::Mat rvec, tvec;
+    cv::Mat rmat, tmat;
+    // cv::Mat tmat = cv::Mat(3, 1, CV_8UC1);
 
     // Find the 2D pose estimations in vector representations
     // (pitch, yaw, roll) and (x, y, z) of the target
-    // std::cerr << corners.size() << ", " << targetPoints.size() << "\n";
-    // std::cerr << intrinsics << "\n" << distortion << "\n";
+    // std::cout << corners.size() << ", " << targetPoints.size() << "\n";
+    // std::cout << intrinsics << "\n" << distortion << "\n";
 
     // Convert the corner points into floats for solvePnP
     // TODO: Change corners to be a vector of cv::Point2f
@@ -203,51 +226,103 @@ cv::Vec3f getAngularDisplacement(cv::Mat& img,
     for (int i = 0; i < corners.size(); ++i)
         cornerPoints.push_back(cv::Point2f(corners[i].x, corners[i].y));
 
-    cv::Mat rmat, tmat;
+    // std::cout << "test1" << "\n";
+    cv::namedWindow("SolvePnP");
+    cv::createTrackbar("Normal/RANSAC", "SolvePnP", &useRansac, 1);
+    cv::createTrackbar("Use Extrinsic Guess", "SolvePnP", &useExtrinsicGuess, 1);
+    cv::createTrackbar("ITERATIVE/P3P/EPNP", "SolvePnP", &solvePnPFlag, 2);
 
-    // std::cerr << cornerPoints << "\n";
-    // TODO: Use RANSAC
-    solvePnPRansac(targetPoints, cornerPoints, intrinsics, distortion, rmat, tmat, false, CV_EPNP);
-    if (containsNaN(rmat) || containsNaN(tmat)) return cv::Vec3f (-1.0, -1.0, -1.0);
+    int flag = 0;
+    switch (solvePnPFlag)
+    {
+    case 0: flag = CV_ITERATIVE; break;
+    case 1: flag = CV_P3P; break;
+    case 2: flag = CV_EPNP; break;
+    }
 
-    char str[30];
-    sprintf(str, "R (%8.2f, %8.2f, %8.2f)", rmat.at<double>(0, 0), rmat.at<double>(1, 0), rmat.at<double>(2, 0));
-    cv::putText(img, str, cv::Point(10, 390), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    // double outward = toDeg()
+    // if (rvec[0])
+    // std::cout << "here1\n";
+    if (useRansac)
+        solvePnPRansac(targetPoints, cornerPoints, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, 100, flag);
+    else
+        solvePnP(targetPoints, cornerPoints, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, flag);
+
+    // std::cout << "here2\n";
+    if (containsNaN(rvec) || containsNaN(tvec)) 
+    {
+        std::cout << "NaN in rvec or tvec" << std::endl; 
+        return cv::Vec3f (-1.0, -1.0, -1.0);
+    }
 
     // Project the axes onto the image
-    cv::projectPoints(axesPoints, rmat, tmat, intrinsics, distortion, projectedAxesPoints);
+    cv::projectPoints(axesPoints, rvec, tvec, intrinsics, distortion, projectedAxesPoints);
 
+    // std::cout << "here3\n";
     // Change the vectors to matrices
-    cv::Rodrigues(rmat, rmat);
-    // cv::Rodrigues(tmat, tmat);
+    cv::Rodrigues(rvec, rmat);
+    // cv::Rodrigues(tvec, tmat);
+    // // -rmat.T * tvec
+    // std::cout << rmat.size() << "\n";
+    // std::cout << tvec.t().size() << "\n";
+    // std::cout << rmat.t().type() << "\n";
+    // std::cout << tvec.t().type() << "\n";
+    // std::cout << (-1 * rmat.t()).dot(cv::Mat(tvec.t())) << "\n";
+    // std::cout << "Tmat: " << tmat << "\n";
+    // std::cout << "here4\n";
 
     cv::Vec3f rotAngles = rotationMatrixToEulerAngles(rmat);
+	// cv::Vec3d eulerAngles;
+	// getEulerAngles(rmat, eulerAngles);
 
-    // Phi is the heading (angle between normal line to camera and line to target)
-    float phi = toDeg(atan(tmat.at<double>(0, 0) / tmat.at<double>(2, 0)));
-    // float phi = toDeg(cv::fastAtan2(tmat.at<double>(2, 0), tmat.at<double>(0, 0)));
+    // std::cout << "here5\n";
+    // Beta is the heading (angle between normal line to camera and line to target)
+    // // Beta is negative because counter clockwise is positive
+    double x = tvec.at<double>(0, 0);
+    double z = tvec.at<double>(2, 0);
+    float beta = toDeg(atan(x/z));
+
+    float phi = toDeg(asin(rmat.at<double>(0, 2)));
+    float theta = -beta - phi; // Phi + beta is the actual angular displacement
+    // std::cout << beta + rotAngles[1] << "\n";
 
     // Put the angle measurements on the image
-    // sprintf(str, "R (%8.2f, %8.2f, %8.2f)", rmat.at<double>(0, 0), rmat.at<double>(1, 0), rmat.at<double>(2, 0));
-    // cv::putText(img, str, cv::Point(10, 390), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
-    sprintf(str, "R (%8.2f, %8.2f, %8.2f)", rotAngles[0], rotAngles[1], rotAngles[2]);
-    cv::putText(img, str, cv::Point(10, 410), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
-    sprintf(str, "T (%8.2f, %8.2f, %8.2f)", tmat.at<double>(0, 0), tmat.at<double>(2,0), tmat.at<double>(2, 0));
-    cv::putText(img, str, cv::Point(10, 430), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    char str[50];
+    cv::Mat statsImg = cv::Mat::zeros(img.size(), CV_8UC3);
+    // sprintf(str, "Eu (%8.2f, %8.2f, %8.2f)", eulerAngles[0], eulerAngles[1], eulerAngles[2]);
+    // cv::putText(statsImg, str, cv::Point(10, 320), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    sprintf(str, "RM (%8.2f, %8.2f, %8.2f)", rmat.at<double>(0, 0), rmat.at<double>(0, 1), rmat.at<double>(0, 2));
+    cv::putText(statsImg, str, cv::Point(10, 340), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    sprintf(str, "RV (%8.2f, %8.2f, %8.2f)", rotAngles[0], rotAngles[1], rotAngles[2]);
+    cv::putText(statsImg, str, cv::Point(10, 360), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    sprintf(str, "TV (%8.2f, %8.2f, %8.2f)", tvec.at<double>(0, 0), tvec.at<double>(1,0), tvec.at<double>(2, 0));
+    cv::putText(statsImg, str, cv::Point(10, 380), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+
+    sprintf(str, "Rot Theta: %.2f", -beta + rotAngles[1]);
+    cv::putText(statsImg, str, cv::Point(10, 410), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
     sprintf(str, "Phi: %.2f", phi);
-    cv::putText(img, str, cv::Point(10, 450), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    cv::putText(statsImg, str, cv::Point(10, 430), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    sprintf(str, "Beta: %.2f", beta);
+    cv::putText(statsImg, str, cv::Point(10, 450), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
+    sprintf(str, "Theta: %.2f", theta);
+    cv::putText(statsImg, str, cv::Point(10, 470), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
 
-    // Theta - Phi is the actual angular displacement
-    sprintf(str, "Theta - Phi: %.2f", rotAngles[1] - phi);
-    cv::putText(img, str, cv::Point(10, 470), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
-
+    cv::imshow("Stats", statsImg);
+    // std::cout << "here6\n";
     // Draw the axes of rotation at the bottom left corner
     cv::circle(img, projectedAxesPoints[0], 4, cv::Scalar(255, 0, 0), -1);
     cv::line(img, projectedAxesPoints[0], projectedAxesPoints[1], cv::Scalar(0, 0, 255), 2);
     cv::line(img, projectedAxesPoints[0], projectedAxesPoints[2], cv::Scalar(0, 255, 0), 2);
     cv::line(img, projectedAxesPoints[0], projectedAxesPoints[3], cv::Scalar(255, 0, 0), 2);
 
-    rotAngles[1] -= phi;
+    // std::cout << "here7\n";
+    // rotAngles[1] -= beta;
+    // Temporary replacement for changing the return type
+    rotAngles[0] = phi;
+    rotAngles[1] = beta;
+    rotAngles[2] = theta;
+    // std::cout << "here8.1\n";
+    // std::cout << rotAngles << std::endl;
     return rotAngles;
 }
 
@@ -379,7 +454,8 @@ int main (int argc, char *argv[])
     double focalLength = 600;
 
     // Angular displacement parameters
-    cv::Vec3f angleVec;
+    // cv::Vec3f angleVec;
+    cv::Mat rvec, tvec;
     std::string cameraConfigFile = "logs/out_camera_data.xml";
 
     // Linearize contours parameters
@@ -394,6 +470,14 @@ int main (int argc, char *argv[])
     int minQualityRatio = 80;
     int minDist = 10;
 
+    // Gnuplot parameters
+    std::ofstream fpsFile, dataFile;
+    fpsFile.open(FPS_FILE.c_str(), std::ios::out);
+    dataFile.open(PROC_DATA_FILE.c_str(), std::ios::out);
+
+    double avg = 0;
+    double fpsTick = 1;
+
     udp_client_server::udp_client client(TARGET_ADDR, UDP_PORT);
     udp_client_server::udp_server server(HOST_ADDR, UDP_PORT);
 
@@ -406,37 +490,29 @@ int main (int argc, char *argv[])
     if (!camera.isOpened())
         throw std::runtime_error(std::string("Error - Could not open camera at port ") + std::to_string(CAMERA_NUM));
     else
-        std::cerr << "Opened camera at port " << CAMERA_NUM << "\n";
+        std::cout << "Opened camera at port " << CAMERA_NUM << "\n";
 
-    std::cerr << "\n";
-    std::cerr << " ============== NOTICE ============= " << "\n";
-    std::cerr << "|                                   |" << "\n";
-    std::cerr << "| Press 'q' to quit without saving  |" << "\n";
-    std::cerr << "| Press 's' to save parameters      |" << "\n";
-    std::cerr << "| Press ' ' to pause                |" << "\n";
-    std::cerr << "|                                   |" << "\n";
-    std::cerr << " =================================== " << "\n";
-    std::cerr << "\n";
+    if (argc == 2)
+        std::cout << "Opening image from " << argv[1] << "\n";
+    else
+        std::cout << "Using camera\n";
+
+    std::cout << "\n";
+    std::cout << " ============== NOTICE ============= " << "\n";
+    std::cout << "|                                   |" << "\n";
+    std::cout << "| Press 'q' to quit without saving  |" << "\n";
+    std::cout << "| Press 'c' to save the input image |" << "\n";
+    std::cout << "| Press 's' to save parameters      |" << "\n";
+    std::cout << "| Press 'l' to load parameters      |" << "\n";
+    std::cout << "| Press ' ' to pause                |" << "\n";
+    std::cout << "|                                   |" << "\n";
+    std::cout << " =================================== " << "\n";
+    std::cout << "\n";
 
     cv::Mat img, rgb;
-    char kill = ' ';
+    char kill = 'l';
 
     std::chrono::high_resolution_clock::time_point start, end;
-
-    // gnuplot parameters
-    // FILE *pipe_gp = popen("gnuplot", "w");  
-    // fputs("set terminal png\n", pipe_gp);
-    // fputs("plot '-' u 1:2 \n", pipe_gp);
-    //
-    // FILE *fpsFile = fopen(FPS_FILE.c_str(), "a");
-    // FILE *dataFile = fopen(PROC_DATA_FILE.c_str(), "a");
-
-    std::ofstream fpsFile, dataFile;
-    fpsFile.open(FPS_FILE.c_str(), std::ios::out | std::ios::app);
-    dataFile.open(PROC_DATA_FILE.c_str(), std::ios::out | std::ios::app);
-
-    double avg = 0;
-    double fpsTick = 1;
 
     while (kill != 'q')
     {
@@ -447,11 +523,10 @@ int main (int argc, char *argv[])
         // Press s to save values into FileStorage
         if (kill == 's')
         {
+            std::cout << "Saving config to logs/config.yml\n";
+
             cv::FileStorage fs("logs/config.yml", cv::FileStorage::WRITE);
-
-            fs << "Parameters" << "{"
-
-                << "Is Blur Window Open" << blur
+            fs << "Is Blur Window Open" << blur
                 << "Is Color Window Open" << color
                 << "Is Dilate Erode Window Open" << dilateErode
                 << "Is Edge Window Open" << edge
@@ -519,23 +594,108 @@ int main (int argc, char *argv[])
                 << "Maximum Area Parameter" << maxAreaParam
                 << "Side Ratio Maximum Deviation Parameter" << sideRatioMaxDeviationParam
                 << "Area Ratio Maximum Deviation Parameter" << areaRatioMaxDeviationParam
-                << "Angle Max Deviation Parameter" << angleMaxDeviationParam
-
-             << "}";
+                << "Angle Max Deviation Parameter" << angleMaxDeviationParam;
             fs.release();
         }
 
-        if (FPS) start = std::chrono::high_resolution_clock::now();
-        if (argc > 2)
+        if (kill == 'l')
         {
-            // TODO: acquire input through imgs / videos
+            std::cout << "Loading config from logs/config.yml\n";
+
+            cv::FileStorage fs("logs/config.yml", cv::FileStorage::READ);
+            fs["Is Blur Window Open"] >> blur;
+            fs["Is Color Window Open"] >> color;
+
+            fs["Is Color Window Open"] >> color;
+            fs["Is Dilate Erode Window Open"] >> dilateErode;
+            fs["Is Edge Window Open"] >> edge;
+            fs["Is Laplacian Window Open"] >> laplacian;
+            fs["Is HoughLines Window Open"] >> houghLines;
+            fs["Is HoughCircles Window Open"] >> houghCircles;
+            fs["Is uShapeThreshold Window Open"] >> uShapeThresholdWindow;
+            fs["Is sideRatioThreshold Window Open"] >> sideRatioThresholdWindow;
+            fs["Is areaRatioThreshold Window Open"] >> areaRatioThresholdWindow;
+            fs["Is angleThreshold Window Open"] >> angleThresholdWindow;
+            fs["Is drawStats Open"] >> drawStats;
+            fs["Is merge Open"] >> merge;
+
+            fs["Apply Blur"] >> applyBlur;
+            fs["Apply Color"] >> applyColor;
+            fs["Apply DilateErode"] >> applyDilateErode;
+            fs["Apply Edge"] >> applyEdge;
+            fs["Apply Laplacian"] >> applyLaplacian;
+            fs["Apply HoughLines"] >> applyHoughLines;
+            fs["Apply HoughCircles"] >> applyHoughCircles;
+            fs["Apply UShapeRatioThreshold"] >> applyUShapeThreshold;
+            fs["Apply SideRatioThreshold"] >> applySideRatioThreshold;
+            fs["Apply AreaRatioThreshold"] >> applyAreaRatioThreshold;
+            fs["Apply AngleThreshold"] >> applyAngleThreshold;
+            fs["Apply Merge"] >> applyMerge;
+
+            fs["Gaussian Blur Kernel Size"] >> blur_ksize;
+            fs["Guassian Blur Sigma X"] >> sigmaX;
+            fs["Guassian Blur Sigma Y"] >> sigmaY;
+
+            fs["Hue Minimum Threshold"] >> hMin;
+            fs["Hue Maximum Threshold"] >> hMax;
+            fs["Saturation Minimum Threshold"] >> sMin;
+            fs["Saturation Maximum Threshold"] >> sMax;
+            fs["Value Minimum Threshold"] >> vMin;
+            fs["Value Maximum Threshold"] >> vMax;
+
+            fs["Dilate Erode Holes"] >> holes;
+            fs["Dilate Erode Noise"] >> noise;
+            fs["Dilate Erode Size"] >> size;
+
+            fs["Canny Lower Threshold"] >> threshLow;
+            fs["Canny Higher Threshold"] >> threshHigh;
+
+            fs["Laplacian Kernel Size"] >> laplacian_ksize;
+            fs["Laplacian Scale"] >> scale;
+            fs["Laplacian Delta"] >> delta;
+
+            fs["HoughLines Rho"] >> rho;
+            fs["HoughLines Theta"] >> theta;
+            fs["HoughLines Threshold"] >>  threshold;
+            fs["HoughLines LineMin"] >> lineMin;
+            fs["HoughLines MaxGap"] >>  maxGap;
+
+            fs["HoughCircles Minimum Distance"] >> hcMinDist;
+            fs["HoughCircles Minimum Radius"] >> hcMinRadius;
+            fs["HoughCircles Maximum Radius"] >> hcMaxRadius;
+
+            fs["Merge Weight 1"] >> mergeWeight1;
+            fs["Merge Weight 2"] >>  mergeWeight2;
+
+            fs["Side Ratio Parameter"] >> sideRatioParam;
+            fs["Area Ratio Parameter"] >> areaRatioParam;
+            fs["Minimum Area Parameter"] >> minAreaParam;
+            fs["Maximum Area Parameter"] >> maxAreaParam;
+            fs["Side Ratio Maximum Deviation Parameter"] >> sideRatioMaxDeviationParam;
+            fs["Area Ratio Maximum Deviation Parameter"] >> areaRatioMaxDeviationParam;
+            fs["Angle Max Deviation Parameter"] >> angleMaxDeviationParam;
+            fs.release();
+
+        }
+
+        if (FPS) start = std::chrono::high_resolution_clock::now();
+        // TODO: acquire input through video
+        if (argc == 2)
+        {
+            img = cv::imread(argv[1]);
         }
         else
         {
             camera >> img;
-            rgb = img.clone();
         }
-        //if (!STREAM) cv::imshow("RGB", img);
+        rgb = img.clone();
+
+        if (kill == 'c')
+        {
+            std::cout << "Writing input image to images/snapped_images/main.jpg\n";
+            cv::imwrite("images/snapped_images/main.jpg", img);
+        }
+
         if (CALIB && STREAM)
         {
             selectMode(blur, color, dilateErode, edge, laplacian, houghLines, houghCircles, uShapeThresholdWindow, sideRatioThresholdWindow, areaRatioThresholdWindow, angleThresholdWindow, drawStats, merge);
@@ -571,10 +731,7 @@ int main (int argc, char *argv[])
             dilateErodeWindows(img, element, holes, noise, applyDilateErode, dilateErode, STREAM);
             cannyEdgeDetectWindows(img, threshLow, threshHigh, applyEdge, edge, STREAM);
             laplacianSharpenWindows(img, laplacian_ksize, scale, delta, applyLaplacian, laplacian, STREAM);
-            houghLinesWindows(img, rho, theta, threshold, lineMin, maxGap, applyHoughLines, houghLines, STREAM);
             houghCirclesWindows(img, hcMinDist, hcMinRadius, hcMaxRadius, applyHoughCircles, houghCircles, STREAM);
-
-            // cv::imwrite("images/snapped_images/filtered.jpg", img);
 
         }
         else
@@ -589,142 +746,143 @@ int main (int argc, char *argv[])
         }
         catch (std::exception& e)
         {
-            std::cerr << e.what() << "\n";
+            std::cout << e.what() << "\n";
         }
-
-
-        // if (contours.size() > 0)
-        // {
-        //     std::vector< std::vector<cv::Point> > linearContours;
-        //     linearContours.resize(contours.size());
-        //     for (size_t i = 0; i < contours.size(); ++i)
-        //         cv::approxPolyDP(contours[i], contours[i], approximationAccuracy, true);
-        //     cv::Mat imgBlank;
-        //     imgBlank = rgb.clone();
-        //     drawContours(imgBlank, contours, YELLOW);
-        //     cv::imshow("Linear Contours", imgBlank);
-        // }
 
         if (contours.size() > 0)
         {
             boundedRects = getBoundedRects(contours);
+			{
+				if (CALIB)
+				{
+					uShapeThresholdWindows(img, contours, boundedRects, minDistFromContours, maxDistFromContours, applyUShapeThreshold, uShapeThresholdWindow, STREAM);
+					sideRatioThresholdWindows(img, contours, boundedRects, sideRatioParam, sideRatioMaxDeviationParam, applySideRatioThreshold, sideRatioThresholdWindow, STREAM);
+					areaRatioThresholdWindows(img, contours, boundedRects, minAreaParam, maxAreaParam, areaRatioParam, areaRatioMaxDeviationParam, applyAreaRatioThreshold, areaRatioThresholdWindow, STREAM);
+					angleThresholdWindows(img, contours, boundedRects, angleMaxDeviationParam, applyAngleThreshold, angleThresholdWindow, STREAM);
+				}
+				else
+				{
+					// Filter out contours that do not match the 'U' shape
+					uShapeThreshold(contours, boundedRects, minDistFromContours, maxDistFromContours);
+					sideRatioThreshold(contours, boundedRects, sideRatio, sideRatioMaxDeviation);
+					areaRatioThreshold(contours, boundedRects, minArea, maxArea, areaRatio, areaRatioMaxDeviation);
+					angleThreshold(contours, boundedRects, angleMaxDeviation);
+				}
+			}
+			if (contours.size() > 0)
+			{
+				// Extract the corners of the target's bounded box
+				// TODO: Write an algorithm that decides which index to use as goalInd
+				boundedRects[goalInd].points(rectPoints);
 
-            if (CALIB)
-            {
-                uShapeThresholdWindows(img, contours, boundedRects, minDistFromContours, maxDistFromContours, applyUShapeThreshold, uShapeThresholdWindow, STREAM);
-                sideRatioThresholdWindows(img, contours, boundedRects, sideRatioParam, sideRatioMaxDeviationParam, applySideRatioThreshold, sideRatioThresholdWindow, STREAM);
-                areaRatioThresholdWindows(img, contours, boundedRects, minAreaParam, maxAreaParam, areaRatioParam, areaRatioMaxDeviationParam, applyAreaRatioThreshold, areaRatioThresholdWindow, STREAM);
-                angleThresholdWindows(img, contours, boundedRects, angleMaxDeviationParam, applyAngleThreshold, angleThresholdWindow, STREAM);
-            }
-            else
-            {
-                // Filter out contours that do not match the 'U' shape
-                uShapeThreshold(contours, boundedRects, minDistFromContours, maxDistFromContours);
-                sideRatioThreshold(contours, boundedRects, sideRatio, sideRatioMaxDeviation);
-                areaRatioThreshold(contours, boundedRects, minArea, maxArea, areaRatio, areaRatioMaxDeviation);
-                angleThreshold(contours, boundedRects, angleMaxDeviation);
-            }
+				// Temporary conversion of Point2f to Point
+				cv::Point rectIntPoints[4];
+				int vertices = 4;
+				for (int i = 0; i < vertices; ++i)
+					rectIntPoints[i] = cv::Point (rectPoints[i].x, rectPoints[i].y);
 
-            // Extract the corners of the target's bounded box
-            // TODO: Write an algorithm that decides which index to use as goalInd
-            boundedRects[goalInd].points(rectPoints);
+				cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
+				// Draw a filled in bounded rectangle at the goal
+				cv::fillConvexPoly(mask, rectIntPoints, vertices, PURPLE);
+				cv::imshow("mask", mask);
 
-            // Temporary conversion of Point2f to Point
-            cv::Point rectIntPoints[4];
-            int vertices = 4;
-            for (int i = 0; i < vertices; ++i)
-                rectIntPoints[i] = cv::Point (rectPoints[i].x, rectPoints[i].y);
+				// cv::namedWindow("Linearize Contours");
+				// cv::createTrackbar("Epsilon", "Linearize Contours", &approximationAccuracy, 100);
+				//
+				// std::vector< std::vector<cv::Point> > linearContours;
+				// linearContours.resize(contours.size());
+				// for (size_t i = 0; i < contours.size(); ++i)
+				//     cv::approxPolyDP(contours[i], linearContours[i], (double)approximationAccuracy, true);
+				// cv::Mat imgBlank;
+				// imgBlank = rgb.clone();
+				// drawContours(imgBlank, linearContours, YELLOW);
+				// cv::imshow("Linear Contours", imgBlank);
+				//
 
-            cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
-            // Draw a filled in bounded rectangle at the goal
-            cv::fillConvexPoly(mask, rectIntPoints, vertices, PURPLE);
-            cv::imshow("mask", mask);
+				cv::namedWindow("Corners");
+				cv::createTrackbar("Block Size", "Corners", &blockSize, 10);
+				cv::createTrackbar("Aperture Size", "Corners", &apertureSize, 10);
+				cv::createTrackbar("maxCorners", "Corners", &maxCorners, 20);
+				cv::createTrackbar("minQualityRatio", "Corners", &minQualityRatio, 100);
+				cv::createTrackbar("minDist", "Corners", &minDist, 100);
+				cv::createTrackbar("Shi-Tomasi/Harris(Good)/Harris", "Corners", &isHarris, 2);
+				cv::createTrackbar("k", "Corners", &k, 10);
+				cv::Mat img_gray, imgBlank;
+				std::vector<cv::Point> goodCorners;
+				cv::cvtColor(img, img_gray, CV_BGR2GRAY);
+				imgBlank = img.clone();
+				// Find only the region of the grayscale image inside the bounding box
+				cv::Mat rectROI;
+				img_gray.copyTo(rectROI, mask);
+				// cv::imshow("Region of Interest", rectROI);
+				if (apertureSize % 2 == 0) apertureSize++;
+				if (maxCorners == 0) maxCorners++;
+				if (minQualityRatio == 0) minQualityRatio++;
+				if (minDist == 0) minDist++;
+				if (k == 0) k++;
+				if (isHarris == 2)
+					cv::cornerHarris(rectROI, imgBlank, blockSize, apertureSize, (double)k/100, cv::BORDER_DEFAULT);
+				else
+					cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), 3, isHarris, (double)k/100);
+				// Draw in filled circles of radius 3 at the identified corners
+				for (int i = 0; i < goodCorners.size(); ++i)
+				{
+					cv::circle(imgBlank, goodCorners[i], 3, YELLOW, -1);
+				}
 
-            // cv::namedWindow("Linearize Contours");
-            // cv::createTrackbar("Epsilon", "Linearize Contours", &approximationAccuracy, 100);
-            //
-            // std::vector< std::vector<cv::Point> > linearContours;
-            // linearContours.resize(contours.size());
-            // for (size_t i = 0; i < contours.size(); ++i)
-            //     cv::approxPolyDP(contours[i], linearContours[i], (double)approximationAccuracy, true);
-            // cv::Mat imgBlank;
-            // imgBlank = rgb.clone();
-            // drawContours(imgBlank, linearContours, YELLOW);
-            // cv::imshow("Linear Contours", imgBlank);
-            //
+				cv::imshow("Corners", imgBlank);
+				houghLinesWindows(img, rho, theta, threshold, lineMin, maxGap, applyHoughLines, houghLines, STREAM);
+				// Find the corners of the target's contours
+				// std::cout << contours.size() << "\n";
+				std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
+				// if (corners.size() > 0)
+				//     cv::cornerSubPix(img, corners, cv::Size(3,3), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT, 10, 100));
+				// cv::Vec3f angleVec = cv::Vec3f(0,0,0);
+				cv::Vec3f angleVec = getAngularDisplacement(img, rvec, tvec, corners, cameraConfigFile, GAME_ELEMENT_WIDTH, GAME_ELEMENT_HEIGHT);
+				// std::cout << "here8" << std::endl;
+				cv::Point2f mc = getCenterOfMass(contours[goalInd]);
 
-            cv::namedWindow("Corners");
-            cv::createTrackbar("Block Size", "Corners", &blockSize, 10);
-            cv::createTrackbar("Aperture Size", "Corners", &apertureSize, 10);
-            cv::createTrackbar("maxCorners", "Corners", &maxCorners, 20);
-            cv::createTrackbar("minQualityRatio", "Corners", &minQualityRatio, 100);
-            cv::createTrackbar("minDist", "Corners", &minDist, 100);
-            cv::createTrackbar("Shi-Tomasi/Harris(Good)/Harris", "Corners", &isHarris, 2);
-            cv::createTrackbar("k", "Corners", &k, 10);
-            cv::Mat img_gray, imgBlank;
-            std::vector<cv::Point> goodCorners;
-            cv::cvtColor(img, img_gray, CV_BGR2GRAY);
-            imgBlank = img.clone();
-            // Find only the region of the grayscale image inside the bounding box
-            cv::Mat rectROI;
-            img_gray.copyTo(rectROI, mask);
-            // cv::imshow("Region of Interest", rectROI);
-            if (apertureSize % 2 == 0) apertureSize++;
-            if (maxCorners == 0) maxCorners++;
-            if (minQualityRatio == 0) minQualityRatio++;
-            if (minDist == 0) minDist++;
-            if (k == 0) k++;
-            if (isHarris == 2)
-                cv::cornerHarris(rectROI, imgBlank, blockSize, apertureSize, (double)k/100, cv::BORDER_DEFAULT);
-            else
-                cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), 3, isHarris, (double)k/100);
-            // Draw in filled circles of radius 3 at the identified corners
-            for (int i = 0; i < goodCorners.size(); ++i)
-            {
-                cv::circle(imgBlank, goodCorners[i], 3, YELLOW, -1);
-            }
+				// std::cout << "here9\n";
+				// Get the distance in inches and angles in degrees
+				double hypotenuse = getShortestDistance(rectPoints, GAME_ELEMENT_WIDTH, focalLength, CALIB_DISTANCE, isFocalLengthCalib);
+				yaw = getYaw(SCREEN_WIDTH, hypotenuse, GAME_ELEMENT_WIDTH, corners, mc);
+				// pitch = getPitch(height, hypotenuse);
 
-            cv::imshow("Corners", imgBlank);
-            // Find the corners of the target's contours
-            std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
-            // if (corners.size() > 0)
-            //     cv::cornerSubPix(img, corners, cv::Size(3,3), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT, 10, 100));
-            angleVec = getAngularDisplacement(img, corners, cameraConfigFile, GAME_ELEMENT_WIDTH, GAME_ELEMENT_HEIGHT);
-            cv::Point2f mc = getCenterOfMass(contours[goalInd]);
+				if (drawStats) putData(img, CALIB_DISTANCE, yaw, pitch);
 
-            // Get the distance in inches and angles in degrees
-            double hypotenuse = getShortestDistance(rectPoints, GAME_ELEMENT_WIDTH, focalLength, CALIB_DISTANCE, isFocalLengthCalib);
-            yaw = getYaw(SCREEN_WIDTH, hypotenuse, GAME_ELEMENT_WIDTH, corners, mc);
-            // pitch = getPitch(height, hypotenuse);
+				if (!std::isfinite(yaw)) yaw = -1;
+				// if (!std::isfinite(pitch)) pitch = -1;
+				if (!std::isfinite(hypotenuse)) hypotenuse = -1;
+				if (!std::isfinite(angleVec[1])) angleVec[1] = -1;
 
-            if (drawStats) putData(img, CALIB_DISTANCE, yaw, pitch);
+				std::string gnuplotBuf = std::to_string(yaw) 
+					+ " " + std::to_string(hypotenuse) 
+					+ " " + std::to_string(angleVec[0])
+					+ " " + std::to_string(angleVec[1])
+					+ " " + std::to_string(angleVec[2]);
 
-            if (!std::isfinite(yaw)) yaw = -1;
-            // if (!std::isfinite(pitch)) pitch = -1;
-            if (!std::isfinite(hypotenuse)) hypotenuse = -1;
-            if (!std::isfinite(angleVec[1])) angleVec[1] = -1;
+				dataFile << gnuplotBuf.c_str() << std::endl;
+				drawContours(img, contours, RED);
+				drawBoundedRects(img, boundedRects, PURPLE);
 
-            std::string gnuplotBuf = std::to_string(yaw) 
-                // + " " + std::to_string(pitch) 
-                + " " + std::to_string(hypotenuse) 
-                + " " + std::to_string(angleVec[1]);
-        
-            // fputs(gnuplotBuf.c_str(), dataFile);
-            dataFile << gnuplotBuf.c_str() << std::endl;
-            drawContours(img, contours, RED);
-            drawBoundedRects(img, boundedRects, PURPLE);
+				cv::Mat tmp = cv::Mat::zeros(img.size(), CV_8UC3);
+				drawContours(tmp, contours, RED);
+				drawBoundedRects(tmp, boundedRects, PURPLE);
+				cv::imshow("Contours and Rects", tmp);
+				cv::line(img, cv::Point(SCREEN_WIDTH / 2, mc.y), mc, YELLOW); // Draw line from center of img to center of mass
+				cv::circle(img, mc, 5, YELLOW); // Draw center of mass
 
-            cv::line(img, cv::Point(SCREEN_WIDTH / 2, mc.y), mc, YELLOW); // Draw line from center of img to center of mass
-            cv::circle(img, mc, 5, YELLOW); // Draw center of mass
-
-            // Draw the corners of the target's contour
-            char str[30];
-            for (int i = 0; i < 4; ++i)
-            {
-                cv::circle(img, corners[i], 3, LIGHT_GREEN);
-                sprintf(str, "%d", i+1);
-                cv::putText(img, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
-            }
+				// Draw the corners of the target's contour
+                {
+                    char str[30];
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        cv::circle(img, corners[i], 3, LIGHT_GREEN);
+                        sprintf(str, "%d", i+1);
+                        cv::putText(img, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
+                    }
+                }
+			}
         }
 
         if (CALIB)
@@ -735,10 +893,10 @@ int main (int argc, char *argv[])
                 else cv::imshow("Threshold Output", img);
             }
             else if (!STREAM) cv::destroyWindow("Threshold Output");
+            if (!STREAM) cv::imshow("Final Output", img);
             mergeFinalWindows(rgb, img, mergeWeight1, mergeWeight2, applyMerge, merge, STREAM);
             if (STREAM && !blur && !color && !dilateErode && !edge && !laplacian && !houghLines && !houghCircles && !uShapeThresholdWindow && !sideRatioThresholdWindow && !areaRatioThresholdWindow && !angleThresholdWindow && !drawStats)
                 mjpgStream(img);
-            if (!STREAM) cv::imshow("Final Output", img);
         }
         else if (STREAM)
         {
@@ -753,17 +911,13 @@ int main (int argc, char *argv[])
             std::chrono::duration<double> timeElapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
             fps = 1.0 / timeElapsed.count();
 
-            // fprintf(pipe_gp, "%f %f\n", fpsTick, fps);
             std::string gnuplotBuf = std::to_string(fps);
-            
-            // fputs(gnuplotBuf.c_str(), fpsFile);
+
             fpsFile << gnuplotBuf.c_str() << std::endl;
-            // std::cerr << "Logged: " << gnuplotBuf.c_str() << "\n";
             avg += fps;
             fpsTick++;
         }
-        
         kill = cv:: waitKey(5);
     }
-    return 0;   
+    return 0;
 }
