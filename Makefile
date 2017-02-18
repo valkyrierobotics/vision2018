@@ -1,4 +1,4 @@
-# Written by Lee Mracek
+# Written by Lee Mracek and Min Hoo Lee
 CC = gcc
 CXX = g++
 LD = g++
@@ -10,7 +10,8 @@ TOUCH = touch
 SED = sed
 MAKEDEPEND = makedepend
 
-LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect
+LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d
+# LIB = `pkg-config opencv --cflags --libs`
 CPPSRCS = $(wildcard src/*.cpp) $(wildcard src/*/*.cpp)
 SRCS = $(CPPSRCS) $(CSRCS)
 
@@ -34,6 +35,36 @@ build/lazer-vision-dbg.so: $(OBJS_DEBUG)
 
 clean:
 	$(RM) -rf build/ obj/ .build_dir
+
+main:
+	$(CXX) main.cpp build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	build/main ${ARGS}
+
+send_start_signal:
+	$(CXX) utilities/start_ping.cpp build/lazer-vision.so -o build/start_ping $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	build/start_ping ${ARGS}
+
+send_stop_signal:
+	$(CXX) utilities/stop_ping.cpp build/lazer-vision.so -o build/stop_ping $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	build/stop_ping ${ARGS}
+
+mjpg_streamer_instance:
+	# Run the mjpg_streamer for port at localhost:8080 using the mjpeg file in ./images/
+	if [ `ps ax | grep -v grep | grep mjpg_streamer | wc -l` -gt 0 ]; then \
+		echo "Killing existing mjpg_streamer instances"; \
+		killall mjpg_streamer; \
+	fi; \
+	mjpg_streamer -i "input_file.so -f ./images/mjpgs/" -o "output_http.so -w /usr/local/www" 
+
+gnuplot_vision:
+	# GRAPH_DIR is the name of the directory inside images/gnuplot/
+	# ARGS is for gnuplot_auto_plotter.sh
+	utilities/gnuplot_auto_plotter.sh -f logs/processed_data.log -d ${GRAPH_DIR} ${ARGS}
+
+gnuplot_fps:
+	# GRAPH_DIR is the name of the directory inside images/gnuplot/
+	# ARGS is for gnuplot_auto_plotter.sh
+	utilities/gnuplot_auto_plotter.sh -f logs/fps.log -d ${GRAPH_DIR} ${ARGS}
 
 ### build objects ###
 obj: $(OBJ_RELEASE)
