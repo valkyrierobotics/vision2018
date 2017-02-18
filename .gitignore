@@ -1,7 +1,13 @@
 vision
 images/*fps*
 images/mjpgs/
+# Temporary gnuplot graphs
+images/gnuplot/
 *.mjpeg
+
+*.log
+logs
+!logs/save_runs
 
 build/
 obj/
