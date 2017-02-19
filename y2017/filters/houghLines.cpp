@@ -1,5 +1,7 @@
 #include "filters/houghLines.hpp"
 
+#include <iostream> 
+
 void houghLines(cv::Mat &image, int rho, int theta, int threshold, int lineMin, int maxGap)
 {
     cv::Mat filtered = image.clone();

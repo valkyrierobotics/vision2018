@@ -1,6 +1,6 @@
 #include "utils/getAngles.hpp"
 
-double getYaw(const int SCREEN_WIDTH, double hypotenuse, double widthInInches, std::vector<cv::Point>& corners, cv::Point2f& mc)
+double getYaw(const int SCREEN_WIDTH, double hypotenuse, double widthInInches, std::vector<cv::Point>& corners, cv::Point& mc)
 {
     // Take distance from bottom left to bottom right corners
 	double widthInPixels = std::abs(corners[0].x - corners[3].x);

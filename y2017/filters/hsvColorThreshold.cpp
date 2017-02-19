@@ -17,12 +17,12 @@ void hsvColorThreshold(cv::Mat &img, int hMin, int hMax, int sMin, int sMax, int
         hMin = static_cast<int>(static_cast<double>(hMin) / 2);
         hMax = static_cast<int>(static_cast<double>(hMax) / 2);
         cv::inRange(channels[0], cv::Scalar(hMin), cv::Scalar(hMax), channels[0]);
-        
+
         if (DEBUG)
         {
             cv::namedWindow("Hue-Filtered Debug", cv::WINDOW_AUTOSIZE);
             cv::imshow("Hue-Filtered Debug", channels[0]);
-        }   
+        }
         else if (!DEBUG)
         {
             cv::destroyWindow("Hue-Filtered Debug");
@@ -40,7 +40,7 @@ void hsvColorThreshold(cv::Mat &img, int hMin, int hMax, int sMin, int sMax, int
         sMin = static_cast<int>(static_cast<double>(sMin) * 255 / 100);
         sMax = static_cast<int>(static_cast<double>(sMax) * 255 / 100);
         cv::inRange(channels[1], cv::Scalar(sMin), cv::Scalar(sMax), channels[1]);
-        
+
         if (DEBUG)
         {
             cv::imshow("Saturation-Filtered Debug", channels[1]);
@@ -62,20 +62,20 @@ void hsvColorThreshold(cv::Mat &img, int hMin, int hMax, int sMin, int sMax, int
         vMin = static_cast<int>(static_cast<double>(vMin) * 255 / 100);
         vMax = static_cast<int>(static_cast<double>(vMax) * 255 / 100);
         cv::inRange(channels[2], cv::Scalar(vMin), cv::Scalar(vMax), channels[2]);
-        
+
         if (DEBUG)
-        { 
+        {
             cv::namedWindow("Value-Filtered Debug", cv::WINDOW_AUTOSIZE);
             cv::imshow("Value-Filtered Debug", channels[2]);
         }
         else if (!DEBUG)
         {
-            cv::destroyWindow("Value-Filtered Debug");  
+            cv::destroyWindow("Value-Filtered Debug");
         }
     }
     else if ( (!DEBUG) || (vMin == 0 && vMax == 100) )
     {
-        cv::destroyWindow("Value-Filtered Debug");  
+        cv::destroyWindow("Value-Filtered Debug");
     }
 
     if (bitAnd)
@@ -87,40 +87,34 @@ void hsvColorThreshold(cv::Mat &img, int hMin, int hMax, int sMin, int sMax, int
             channels[1] = channels[0].clone();
             channels[2] = channels[0].clone();
         }
-
         else if (valAltered && hueAltered) // Value, Hue
         {
             bitwise_and(channels[0], channels[2], channels[0]);
             channels[2] = channels[0].clone();
             channels[1] = channels[0].clone();
         }
-
         else if (hueAltered && satAltered) // Sat, Hue
         {
             bitwise_and(channels[0], channels[1], channels[0]);
             channels[2] = channels[0].clone();
             channels[1] = channels[0].clone();
         }
-    
         else if (satAltered && valAltered) // Sat, Val
         {
             bitwise_and(channels[2], channels[1], channels[1]);
             channels[2] = channels[1].clone();
             channels[0] = channels[1].clone();
         }
-        
         else if (valAltered) // Only Value
         {
             channels[1] = channels[2].clone();
             channels[0] = channels[2].clone();
         }
-        
         else if (satAltered) // Only Sat
         {
             channels[2] = channels[1].clone();
             channels[0] = channels[1].clone();
         }
-    
         else if (hueAltered) // Only Hue
         {
             channels[1] = channels[0].clone();

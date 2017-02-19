@@ -6,6 +6,6 @@
 #include <vector>
 #include <exception>
 
-cv::Point2f getCenterOfMass(std::vector<cv::Point>& contour);
+cv::Point getCenterOfMass(std::vector<cv::Point>& contour);
 
 #endif // GET_CENTER_OF_MASS

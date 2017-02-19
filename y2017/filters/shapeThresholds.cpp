@@ -76,7 +76,7 @@ void uShapeThreshold (std::vector< std::vector<cv::Point> >& contours, std::vect
     {
         cv::Moments mu = cv::moments(contours[i], false);
         // Negative distance because outside of contour area, so change back to positive
-        double dist = -1 * cv::pointPolygonTest(contours[i], cv::Point2f(mu.m10 / mu.m00, mu.m01 / mu.m00), true);
+        double dist = -1 * cv::pointPolygonTest(contours[i], cv::Point(mu.m10 / mu.m00, mu.m01 / mu.m00), true);
         // Remove if center of mass is not the correct distance away from the contour area
         if (dist < minDist || dist > maxDist)
         {

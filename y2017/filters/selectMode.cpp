@@ -1,7 +1,7 @@
 #include "filters/selectMode.hpp"
 
 // Interface for selecting filters to view and apply
-void selectMode(int &blur, int &colorThreshold, int &dilateErode, int &edge, int &laplacian, int &houghLines, int& houghCircles, int& uShapeThreshold, int &sideRatioThreshold, int& areaRatioThreshold, int& angleThreshold, int& drawStats, int& merge)
+void selectMode(int &blur, int &colorThreshold, int &dilateErode, int &edge, int &laplacian, int &houghLines, int& houghCircles, int& uShapeThreshold, int &sideRatioThreshold, int& areaRatioThreshold, int& angleThreshold, int& distanceCalib, int& drawStats, int& merge)
 {
 	cv::namedWindow("Filter Options");
     cv::resizeWindow("Filter Options", 500, 1000);
@@ -17,6 +17,7 @@ void selectMode(int &blur, int &colorThreshold, int &dilateErode, int &edge, int
 	cv::createTrackbar("Side Ratio Threshold", "Filter Options", &sideRatioThreshold, 1);
 	cv::createTrackbar("Area Ratio Threshold", "Filter Options", &areaRatioThreshold, 1);
 	cv::createTrackbar("Angle Threshold", "Filter Options", &angleThreshold, 1);
+	cv::createTrackbar("Distance Calib", "Filter Options", &distanceCalib, 1);
 	cv::createTrackbar("Draw Statistics", "Filter Options", &drawStats, 1);
 	cv::createTrackbar("Merge After Filtering", "Filter Options", &merge, 1);
 }
