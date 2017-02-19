@@ -9,18 +9,21 @@ MKDIR = mkdir
 TOUCH = touch
 SED = sed
 MAKEDEPEND = makedepend
+# Default arguments
+PLOT_FPS_ARGS = -c 1 -n 60 -m 30
+PLOT_VISION_ARGS = -c 4 -n 30 -m 60 -d 30_deg
 
-LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d
+LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d -lopencv_features2d
 # LIB = `pkg-config opencv --cflags --libs`
-CPPSRCS = $(wildcard src/*.cpp) $(wildcard src/*/*.cpp)
+CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp)
 SRCS = $(CPPSRCS) $(CSRCS)
 
 CFLAGS_DEBUG = -g -D_LAZER_DEBUG
-OBJS_DEBUG = $(patsubst src/%.cpp,obj/%-dbg.o, $(SRCS))
+OBJS_DEBUG = $(patsubst y2017/%.cpp,obj/%-dbg.o, $(SRCS))
 CFLAGS_RELEASE = -O3 -Wno-unused-value
-OBJS_RELEASE = $(patsubst src/%.cpp,obj/%.o,$(SRCS))
+OBJS_RELEASE = $(patsubst y2017/%.cpp,obj/%.o,$(SRCS))
 
-CFLAGS = -Iinclude -static-libgcc -Wall -fno-use-linker-plugin -fno-exceptions -shared -fPIC
+CFLAGS = -Iy2017 -static-libgcc -Wall -fno-use-linker-plugin -fno-exceptions -shared -fPIC
 CXXFLAGS = -static-libstdc++ -std=c++11 -Wall -Wextra -fexceptions
 
 deploy: .build_dir build/lazer-vision.so
@@ -36,17 +39,17 @@ build/lazer-vision-dbg.so: $(OBJS_DEBUG)
 clean:
 	$(RM) -rf build/ obj/ .build_dir
 
-main:
+main: deploy
 	$(CXX) main.cpp build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
-	build/main ${ARGS}
+	build/main ${MAIN_ARGS}
 
-send_start_signal:
+send_start_signal: deploy
 	$(CXX) utilities/start_ping.cpp build/lazer-vision.so -o build/start_ping $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
-	build/start_ping ${ARGS}
+	build/start_ping ${START_ARGS}
 
-send_stop_signal:
+send_stop_signal: deploy
 	$(CXX) utilities/stop_ping.cpp build/lazer-vision.so -o build/stop_ping $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
-	build/stop_ping ${ARGS}
+	build/stop_ping ${STOP_ARGS}
 
 mjpg_streamer_instance:
 	# Run the mjpg_streamer for port at localhost:8080 using the mjpeg file in ./images/
@@ -57,24 +60,26 @@ mjpg_streamer_instance:
 	mjpg_streamer -i "input_file.so -f ./images/mjpgs/" -o "output_http.so -w /usr/local/www" 
 
 gnuplot_vision:
-	# GRAPH_DIR is the name of the directory inside images/gnuplot/
 	# ARGS is for gnuplot_auto_plotter.sh
-	utilities/gnuplot_auto_plotter.sh -f logs/processed_data.log -d ${GRAPH_DIR} ${ARGS}
+	utilities/gnuplot_auto_plotter.sh -f logs/processed_data.log ${PLOT_VISION_ARGS}
 
 gnuplot_fps:
-	# GRAPH_DIR is the name of the directory inside images/gnuplot/
 	# ARGS is for gnuplot_auto_plotter.sh
-	utilities/gnuplot_auto_plotter.sh -f logs/fps.log -d ${GRAPH_DIR} ${ARGS}
+	utilities/gnuplot_auto_plotter.sh -f logs/fps.log ${PLOT_FPS_ARGS}
+
+camera_calib:
+	$(CXX) utilities/camera_calibration.cpp -o build/camera_calib $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	build/camera_calib logs/in_VID5.xml
 
 ### build objects ###
 obj: $(OBJ_RELEASE)
 
 obj-debug: $(OBJ_DEBUG)
 
-obj/%-dbg.o: src/%.cpp
+obj/%-dbg.o: y2017/%.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-obj/%.o: src/%.cpp
+obj/%.o: y2017/%.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 ### create file tree ###
