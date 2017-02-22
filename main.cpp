@@ -462,8 +462,8 @@ int main (int argc, char *argv[])
     int maxCorners = 10;
     int minQualityRatio = 80;
     int minDist = 10;
-    CornerExtractor::CornerParams p = DEFAULT_CORNER_PARAMS;
-    CornerExtractor gamePiece (p);
+    CornerExtractor::CornerParams cornerParams = DEFAULT_CORNER_PARAMS;
+    CornerExtractor gamePiece (cornerParams);
 
     // Gnuplot parameters
     std::ofstream fpsFile, dataFile;
@@ -593,7 +593,21 @@ int main (int argc, char *argv[])
                 << "Maximum Area Parameter" << maxAreaParam
                 << "Side Ratio Maximum Deviation Parameter" << sideRatioMaxDeviationParam
                 << "Area Ratio Maximum Deviation Parameter" << areaRatioMaxDeviationParam
-                << "Angle Max Deviation Parameter" << angleMaxDeviationParam;
+                << "Angle Max Deviation Parameter" << angleMaxDeviationParam
+                << "Corner Extractor Parameters" 
+                << "{"
+                  << "Window Name" << cornerParams.windowName
+                  << "Apply Filter" << cornerParams.applyFilter
+                  << "Show Windows" << cornerParams.showWindows
+                  << "Quality Level" << cornerParams.qualityLevel
+                  << "Minimum Distance" << cornerParams.minDist
+                  << "k" << cornerParams.k
+                  << "Block Size" << cornerParams.blockSize
+                  << "Max Corners" << cornerParams.maxCorners
+                  << "Win Size" << cornerParams.winSize
+                  << "Zero Zone" << cornerParams.zeroZone
+                  // << "Term Criteria" << criteria
+                << "}";
             fs.release();
         }
 
@@ -673,6 +687,17 @@ int main (int argc, char *argv[])
             fs["Side Ratio Maximum Deviation Parameter"] >> sideRatioMaxDeviationParam;
             fs["Area Ratio Maximum Deviation Parameter"] >> areaRatioMaxDeviationParam;
             fs["Angle Max Deviation Parameter"] >> angleMaxDeviationParam;
+            fs["Corner Extractor Parameters"]["Window Name"] >> cornerParams.windowName;
+            fs["Corner Extractor Parameters"]["Apply Filter"] >> cornerParams.applyFilter;
+            fs["Corner Extractor Parameters"]["Show Windows"] >> cornerParams.showWindows;
+            fs["Corner Extractor Parameters"]["Quality Level"] >> cornerParams.qualityLevel;
+            fs["Corner Extractor Parameters"]["Minimum Distance"] >> cornerParams.minDist;
+            fs["Corner Extractor Parameters"]["k"] >> cornerParams.k;
+            fs["Corner Extractor Parameters"]["Block Size"] >> cornerParams.blockSize;
+            fs["Corner Extractor Parameters"]["Max Corners "] >> cornerParams.maxCorners;
+            fs["Corner Extractor Parameters"]["Win Size"] >> cornerParams.winSize;
+            fs["Corner Extractor Parameters"]["Zero Zone"] >> cornerParams.zeroZone;
+
             fs.release();
 
         }
@@ -809,31 +834,31 @@ int main (int argc, char *argv[])
                     cv::imshow("Contours and Rects", tmp);
                     houghLinesWindows(tmp, rho, theta, threshold, lineMin, maxGap, applyHoughLines, houghLines, STREAM);
 
-                    cv::namedWindow("Corners");
-                    cv::createTrackbar("Block Size", "Corners", &blockSize, 10);
-                    cv::createTrackbar("Aperture Size", "Corners", &apertureSize, 10);
-                    cv::createTrackbar("maxCorners", "Corners", &maxCorners, 20);
-                    cv::createTrackbar("minQualityRatio", "Corners", &minQualityRatio, 100);
-                    cv::createTrackbar("minDist", "Corners", &minDist, 100);
-                    cv::createTrackbar("Shi-Tomasi/Harris(Good)/Harris", "Corners", &isHarris, 2);
-                    cv::createTrackbar("k", "Corners", &k, 10);
+                    // cv::namedWindow("Corners");
+                    // cv::createTrackbar("Block Size", "Corners", &blockSize, 10);
+                    // cv::createTrackbar("Aperture Size", "Corners", &apertureSize, 10);
+                    // cv::createTrackbar("maxCorners", "Corners", &maxCorners, 20);
+                    // cv::createTrackbar("minQualityRatio", "Corners", &minQualityRatio, 100);
+                    // cv::createTrackbar("minDist", "Corners", &minDist, 100);
+                    // cv::createTrackbar("Shi-Tomasi/Harris(Good)/Harris", "Corners", &isHarris, 2);
+                    // cv::createTrackbar("k", "Corners", &k, 10);
                     cv::Mat img_gray, imgBlank;
-                    std::vector<cv::Point2f> goodCorners;
+                    // std::vector<cv::Point2f> goodCorners;
                     cv::cvtColor(tmp, img_gray, CV_BGR2GRAY);
-                    imgBlank = tmp.clone();
+                    // imgBlank = tmp.clone();
                     // Find only the region of the grayscale image inside the bounding box
                     cv::Mat rectROI;
                     img_gray.copyTo(rectROI, mask);
-                    // cv::imshow("Region of Interest", rectROI);
-                    if (apertureSize % 2 == 0) apertureSize++;
-                    if (maxCorners == 0) maxCorners++;
-                    if (minQualityRatio == 0) minQualityRatio++;
-                    if (minDist == 0) minDist++;
-                    if (k == 0) k++;
-                    if (isHarris == 2)
-                        cv::cornerHarris(rectROI, imgBlank, blockSize, apertureSize, (double)k/100, cv::BORDER_DEFAULT);
-                    else
-                        cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), blockSize, isHarris, (double)k/100);
+                    // // cv::imshow("Region of Interest", rectROI);
+                    // if (apertureSize % 2 == 0) apertureSize++;
+                    // if (maxCorners == 0) maxCorners++;
+                    // if (minQualityRatio == 0) minQualityRatio++;
+                    // if (minDist == 0) minDist++;
+                    // if (k == 0) k++;
+                    // if (isHarris == 2)
+                    //     cv::cornerHarris(rectROI, imgBlank, blockSize, apertureSize, (double)k/100, cv::BORDER_DEFAULT);
+                    // else
+                    //     cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), blockSize, isHarris, (double)k/100);
                         // goodFeaturesToTrack_Demo(img_gray, goodCorners, maxCorners);
                     // cv::Mat tmp = cv::Mat::zeros(img.size(), CV_8UC1);
                     // cvtColor(img, tmp, CV_BGR2GRAY);
@@ -844,11 +869,12 @@ int main (int argc, char *argv[])
                     // Draw the corners of the target's contour
                     {
                         char str[100];
-                        for( size_t i = 0; i < corners.size(); i++ )
+                        for( size_t i = 0; i < corners.size(); ++i )
                         {
-                            sprintf(str, "%zu", i+1);
+                            sprintf(str, "%zu", i);
                             cv::putText(tmp, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
-                            circle( tmp, corners[i], 4, cv::Scalar(rng_.uniform(0,255), rng_.uniform(0,255), rng_.uniform(0,255)), -1, 8, 0 );
+                            int r = 1;
+                            circle( tmp, corners[i], r, cv::Scalar(rng_.uniform(0,255), rng_.uniform(0,255), rng_.uniform(0,255)), -1, 8, 0 );
                         }
                     }
                     cv::imshow("Good Corners", tmp);

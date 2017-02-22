@@ -69,32 +69,34 @@ void CornerExtractor::update(cv::Mat& img,
 // Currently only supports MAX_GAME_PIECE_CORNERS points (rectangle)
 std::vector<cv::Point2f> CornerExtractor::getCorners()
 {
-  // Find the approximate locations of the corners
-  // findApproxCorners();
-  findGoodFeatures();
-
-  // Refine the corners so that distances are absolute minima
-  refineCorners();
-
   // TODO: set this up with callbacks that somehow call update()
   startWindows();
+  // if (params_->applyFilter)
+  {
+    // Find the approximate locations of the corners
+    // findApproxCorners();
+    findGoodFeatures();
 
-  orderCorners();
+    // Refine the corners so that distances are absolute minima
+    refineCorners();
 
-  return corners_;
-  // for (size_t i = 0; i < MAX_GAME_PIECE_CORNERS; ++i)
-  // {
-  //   corners_.push_back((*pts_)[indices_[i]]);
-  // }
-  // // std::cout << "\n\n";
-  // // {
-  // //   cv::Mat img = cv::Mat::zeros(SCREEN_HEIGHT, SCREEN_WIDTH, CV_8UC3);
-  // //   std::vector<std::vector<cv::Point> > c;
-  // //   c.push_back(corners);
-  // //   drawContours(img, c, -1, cv::Scalar(0, 0, 255), 5, 8);
-  // //   cv::imshow("test", img);
-  // // }
-  // return corners_;
+    orderCorners();
+
+    return corners_;
+    // for (size_t i = 0; i < MAX_GAME_PIECE_CORNERS; ++i)
+    // {
+    //   corners_.push_back((*pts_)[indices_[i]]);
+    // }
+    // // std::cout << "\n\n";
+    // // {
+    // //   cv::Mat img = cv::Mat::zeros(SCREEN_HEIGHT, SCREEN_WIDTH, CV_8UC3);
+    // //   std::vector<std::vector<cv::Point> > c;
+    // //   c.push_back(corners);
+    // //   drawContours(img, c, -1, cv::Scalar(0, 0, 255), 5, 8);
+    // //   cv::imshow("test", img);
+    // // }
+    // return corners_;
+  }
 }
 
 void CornerExtractor::startWindows()
@@ -107,6 +109,7 @@ void CornerExtractor::startWindows()
     cv::createTrackbar("Max Corners", params_->windowName, &(params_->maxCorners), 20);
     cv::createTrackbar("Block Size", params_->windowName, &(params_->blockSize), 10);
     cv::createTrackbar("Min Dist", params_->windowName, &(params_->minDist), 100);
+    cv::createTrackbar("Quality Level (divide 100)", params_->windowName, &(params_->qualityLevel), 100);
   }
   else
   {
@@ -116,10 +119,13 @@ void CornerExtractor::startWindows()
 
 void CornerExtractor::findGoodFeatures()
 {
+  if (params_->qualityLevel == 0) params_->qualityLevel++;
+  if (params_->blockSize == 0) params_->blockSize++;
   cv::goodFeaturesToTrack(*imgGray_,
       corners_,
       params_->maxCorners,
-      params_->qualityLevel,
+      // params_->qualityLevel,
+      params_->qualityLevel / 100.0,
       params_->minDist,
       cv::Mat(),
       params_->blockSize,
