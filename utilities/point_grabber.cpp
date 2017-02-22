@@ -93,11 +93,11 @@ int main(int argc, char** argv)
 		// auto beg = saved_points.begin();
 		// cv::Mat transform = cv::getPerspectiveTransform(std::vector<cv::Point3f>(beg, (beg + 4)), std::vector<cv::Point2f>((beg + 4), (beg + 8)));
         
-        cv::Mat distortion = cv::Mat::zeros(4, 1, CV_64FC1);
-        cv::Mat rvec = cv::Mat::zeros(3, 1, CV_64FC1);
-        cv::Mat tvec = cv::Mat::zeros(3, 1, CV_64FC1);
-        bool useExtrinsicGuess = false;
-		cv::Mat transform = cv::solvePnP(std::vector<cv::Point3f>(beg, (beg + 4)), std::vector<cv::Point2f>((beg + 4), (beg + 8)), cam_intrins, distortion, rvec, tvec, useExtrinsicGuess, CV_EPNP);
+        // cv::Mat distortion = cv::Mat::zeros(4, 1, CV_64FC1);
+        // cv::Mat rvec = cv::Mat::zeros(3, 1, CV_64FC1);
+        // cv::Mat tvec = cv::Mat::zeros(3, 1, CV_64FC1);
+        // bool useExtrinsicGuess = false;
+		// cv::Mat transform = cv::solvePnP(std::vector<cv::Point3f>(beg, (beg + 4)), std::vector<cv::Point2f>((beg + 4), (beg + 8)), cam_intrins, distortion, rvec, tvec, useExtrinsicGuess, CV_EPNP);
         
 		// cout << isRotationMatrix(transform) << "\n";
 		// cout << transform << "\n";	
