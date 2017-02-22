@@ -44,36 +44,9 @@
 #include "y2017/filters/mergeFinalWindows.hpp"
 #include "y2017/filters/shapeThresholdsWindows.hpp"
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+// #include "utilities/accurate_corners.cpp"
 
-// Measurements are in inches
-const double TOWER_HEIGHT = 11;
-const double CAMERA_HEIGHT = 0.5;
-const double GAME_ELEMENT_WIDTH = 2;
-const double GAME_ELEMENT_HEIGHT = 5;
-const int CAMERA_NUM = 0;
-
-double pitch = 0;
-double yaw = 0;
-double fps = 0;
-
-const std::string FPS_FILE = "logs/fps.log";
-const std::string PROC_DATA_FILE = "logs/processed_data.log";
-
-//const std::string TARGET_ADDR = "10.1.15.2";
-//const std::string HOST_ADDR = "10.1.15.8";
-const std::string TARGET_ADDR = "2.9.9.1";
-// const std::string HOST_ADDR = "10.42.0.1";
-const std::string HOST_ADDR = "localhost";
-const int UDP_PORT = 5810;
-
-cv::Scalar GREEN (0, 255, 0);
-cv::Scalar BLUE_GREEN (255, 255, 0);
-cv::Scalar PURPLE (255, 0, 255);
-cv::Scalar LIGHT_GREEN (255, 100, 100);
-cv::Scalar RED (0, 0, 255);
-cv::Scalar YELLOW (0, 255, 255);
+cv::RNG rng_(12345);
 
 // Checks if a matrix is a valid rotation matrix.
 bool isRotationMatrix(cv::Mat& R)
@@ -88,7 +61,7 @@ bool isRotationMatrix(cv::Mat& R)
 
 float toDeg (float rad)
 {
-    return rad * 180 / PI;
+    return rad * 180 / M_PI;
 }
 
 // Calculates rotation matrix to euler angles
@@ -162,7 +135,7 @@ int getLeftMostContourIndex(std::vector< std::vector<cv::Point> >& contours)
     {
         cv::Point mc = getCenterOfMass(contours[i]);
         curr = distance(leftMost, mc);
-        // char str[50];
+        // char str[100];
         // sprintf(str, "%d: (%3.0f)", i, curr);
         // cv::putText(img, str, mc, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
         if (curr < minDistance)
@@ -226,14 +199,14 @@ int useRansac = 0;
 // Return (-1.0, -1.0, -1.0) on failure
 cv::Vec3f getAngularPosition(cv::Mat& img,
         cv::Mat& rvec, cv::Mat& tvec,
-        std::vector<cv::Point>& corners,
-        std::string& cameraConfigFile,
+        std::vector<cv::Point2f>& corners,
+        const std::string& CAMERA_CONFIG_FILE,
         float targetWidth, float targetHeight)
 {
     if (corners.size() != 4) return cv::Vec3f (-1.0, -1.0, -1.0);
 
     cv::FileStorage fs;
-    fs.open(cameraConfigFile, cv::FileStorage::READ);
+    fs.open(CAMERA_CONFIG_FILE, cv::FileStorage::READ);
     // Read camera matrix and distortion coefficients from file
 
     cv::Mat intrinsics, distortion;
@@ -274,12 +247,12 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
     // std::cout << rvec.size() << ", " << tvec.size() << "\n";
     // Find the 2D pose estimations in vector representations
     // (pitch, yaw, roll) and (x, y, z) of the target
-    std::vector<cv::Point2f> floatCorners;
-    cvPointTo<cv::Point2f>(corners, floatCorners);
+    // std::vector<cv::Point2f> floatCorners;
+    // cvPointTo<cv::Point2f>(corners, floatCorners);
     if (useRansac)
-        solvePnPRansac(targetPoints, floatCorners, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, 100, flag);
+        solvePnPRansac(targetPoints, corners, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, 100, flag);
     else
-        solvePnP(targetPoints, floatCorners, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, flag);
+        solvePnP(targetPoints, corners, intrinsics, distortion, rvec, tvec, useExtrinsicGuess, flag);
 
     if (containsNaN(rvec) || containsNaN(tvec)) 
     {
@@ -293,17 +266,11 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
     cv::Mat rmat, tmat;
     // Change the vectors to matrices
     cv::Rodrigues(rvec, rmat);
-    // cv::Rodrigues(tvec, tmat);
-    // // -rmat.T * tvec
-    // std::cout << rmat.size() << "\n";
-    // std::cout << tvec.t().size() << "\n";
-    // std::cout << rmat.t().type() << "\n";
-    // std::cout << tvec.t().type() << "\n";
-    // std::cout << (-1 * rmat.t()).dot(cv::Mat(tvec.t())) << "\n";
-    // std::cout << "Tmat: " << tmat << "\n";
-    cv::Mat camRotVec;
-    cv::Rodrigues(rmat.t(), camRotVec);
+
+    // cv::Mat camRotVec;
+    // cv::Rodrigues(rmat.t(), camRotVec);
     cv::Mat camTransVec = -rmat.t() * tvec;
+    double euclideanNormDistance = std::sqrt(std::pow(camTransVec.at<double>(0, 0), 2) + std::pow(camTransVec.at<double>(0, 1), 2) + std::pow(camTransVec.at<double>(0, 2), 2));
 
     cv::Vec3f rotAngles = rotationMatrixToEulerAngles(rmat);
     // cv::Vec3d eulerAngles;
@@ -323,8 +290,10 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
     // std::cout << beta + rotAngles[1] << "\n";
 
     // Put the angle measurements on the image
-    char str[50];
     cv::Mat statsImg = cv::Mat::zeros(img.size(), CV_8UC3);
+    char str [60];
+    sprintf(str, "Euclidean Distance (%8.2f)", euclideanNormDistance);
+    cv::putText(statsImg, str, cv::Point(10, 20), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
     sprintf(str, "Camera Transpose (%8.2f, %8.2f, %8.2f)", camTransVec.at<double>(0, 0), camTransVec.at<double>(0, 1), camTransVec.at<double>(0, 2));
     cv::putText(statsImg, str, cv::Point(10, 320), CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, cv::Scalar(255, 0, 200), 1, 8, false);
     // sprintf(str, "Eu (%8.2f, %8.2f, %8.2f)", eulerAngles[0], eulerAngles[1], eulerAngles[2]);
@@ -481,7 +450,6 @@ int main (int argc, char *argv[])
     // Angular displacement parameters
     // cv::Vec3f angleVec;
     cv::Mat rvec, tvec;
-    std::string cameraConfigFile = "logs/out_camera_data.xml";
 
     // Linearize contours parameters
     int approximationAccuracy = 3;
@@ -494,6 +462,8 @@ int main (int argc, char *argv[])
     int maxCorners = 10;
     int minQualityRatio = 80;
     int minDist = 10;
+    CornerExtractor::CornerParams p = DEFAULT_CORNER_PARAMS;
+    CornerExtractor gamePiece (p);
 
     // Gnuplot parameters
     std::ofstream fpsFile, dataFile;
@@ -829,6 +799,8 @@ int main (int argc, char *argv[])
                 drawContours(imgBlank, linearContours, -1, YELLOW, lineThickness, 8);
                 cv::imshow("Linear Contours", imgBlank);
 
+                cv::Point mc;
+                std::vector<cv::Point2f> corners;
                 {
                     cv::Mat tmp = cv::Mat::zeros(img.size(), CV_8UC3);
                     // Draw all the contours 
@@ -846,7 +818,7 @@ int main (int argc, char *argv[])
                     cv::createTrackbar("Shi-Tomasi/Harris(Good)/Harris", "Corners", &isHarris, 2);
                     cv::createTrackbar("k", "Corners", &k, 10);
                     cv::Mat img_gray, imgBlank;
-                    std::vector<cv::Point> goodCorners;
+                    std::vector<cv::Point2f> goodCorners;
                     cv::cvtColor(tmp, img_gray, CV_BGR2GRAY);
                     imgBlank = tmp.clone();
                     // Find only the region of the grayscale image inside the bounding box
@@ -861,28 +833,47 @@ int main (int argc, char *argv[])
                     if (isHarris == 2)
                         cv::cornerHarris(rectROI, imgBlank, blockSize, apertureSize, (double)k/100, cv::BORDER_DEFAULT);
                     else
-                        cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), 3, isHarris, (double)k/100);
-                    // Draw in filled circles of radius 3 at the identified corners
-                    for (size_t i = 0; i < goodCorners.size(); ++i)
+                        cv::goodFeaturesToTrack(rectROI, goodCorners, maxCorners, (double)minQualityRatio/100, minDist, cv::Mat(), blockSize, isHarris, (double)k/100);
+                        // goodFeaturesToTrack_Demo(img_gray, goodCorners, maxCorners);
+                    // cv::Mat tmp = cv::Mat::zeros(img.size(), CV_8UC1);
+                    // cvtColor(img, tmp, CV_BGR2GRAY);
+                    mc = getCenterOfMass(contours[goalInd]);
+                    gamePiece.update(rectROI, contours[goalInd], mc);
+                    corners = gamePiece.getCorners();
+                    tmp = rgb.clone();
+                    // Draw the corners of the target's contour
                     {
-                        cv::circle(imgBlank, goodCorners[i], 3, YELLOW, -1);
+                        char str[100];
+                        for( size_t i = 0; i < corners.size(); i++ )
+                        {
+                            sprintf(str, "%zu", i+1);
+                            cv::putText(tmp, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
+                            circle( tmp, corners[i], 4, cv::Scalar(rng_.uniform(0,255), rng_.uniform(0,255), rng_.uniform(0,255)), -1, 8, 0 );
+                        }
                     }
-                    cv::imshow("Corners", imgBlank);
+                    cv::imshow("Good Corners", tmp);
+                    // Draw in filled circles of radius 3 at the identified corners
+                    // for (size_t i = 0; i < goodCorners.size(); ++i)
+                    // {
+                    //     cv::circle(imgBlank, goodCorners[i], 3, YELLOW, -1);
+                    // }
+                    // cv::imshow("Corners", imgBlank);
                 }
 
+
                 // Find the corners of the target's contours
-                std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
+                // std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
+                // gamePiece.update(contours[goalInd], mc, 2);
                 // if (corners.size() > 0)
                 //     cv::cornerSubPix(img, corners, cv::Size(3,3), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT, 10, 100));
 
                 // cv::Vec3f angleVec = cv::Vec3f(0,0,0);
-                cv::Vec3f angleVec = getAngularPosition(img, rvec, tvec, corners, cameraConfigFile, GAME_ELEMENT_WIDTH, GAME_ELEMENT_HEIGHT);
-                cv::Point mc = getCenterOfMass(contours[goalInd]);
+                cv::Vec3f angleVec = getAngularPosition(img, rvec, tvec, corners, CAMERA_CONFIG_FILE, GAME_ELEMENT_WIDTH, GAME_ELEMENT_HEIGHT);
 
                 // Get the distance in inches and angles in degrees
                 calibrateFocalLength(img, focalLength, calibDistance, heightDisplacement, contoursThresh, applyDistanceCalib, showDistanceCalib, distanceCalib);
                 double euclidDist = getEuclideanDistance(rectPoints, GAME_ELEMENT_WIDTH, focalLength, calibDistance, applyDistanceCalib);
-                yaw = getYaw(SCREEN_WIDTH, euclidDist, GAME_ELEMENT_WIDTH, corners, mc);
+                // yaw = getYaw(SCREEN_WIDTH, euclidDist, GAME_ELEMENT_WIDTH, corners, mc);
                 // pitch = getPitch(height, euclidDist);
 
                 {
@@ -912,16 +903,16 @@ int main (int argc, char *argv[])
 
                     cv::line(img, cv::Point(SCREEN_WIDTH / 2, mc.y), mc, YELLOW); // Draw line from center of img to center of mass
                     cv::circle(img, mc, 5, YELLOW); // Draw center of mass
-                    // Draw the corners of the target's contour
-                    {
-                        char str[30];
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            cv::circle(img, corners[i], 3, LIGHT_GREEN);
-                            sprintf(str, "%d", i+1);
-                            cv::putText(img, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
-                        }
-                    }
+                    // // Draw the corners of the target's contour
+                    // {
+                    //     char str[30];
+                    //     for (int i = 0; i < 4; ++i)
+                    //     {
+                    //         cv::circle(img, corners[i], 3, LIGHT_GREEN);
+                    //         sprintf(str, "%d", i+1);
+                    //         cv::putText(img, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
+                    //     }
+                    // }
                 }
             }
         }
