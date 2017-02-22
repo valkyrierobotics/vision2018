@@ -4,12 +4,11 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <math.h>
 
-// Returns the minimum distance (straight line) between b points
-template <class T>
-double distance(T a, T b)
+// Returns the Euclidean distance between two points
+template <class T1, class T2>
+double distance(T1 a, T2 b)
 {
-    return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
-    // return cv::norm(a.x - b.x, a.y - b.y);
+  return std::sqrt((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y));
 }
 
 double calibrateFocalLength(cv::Mat& img, double& focalLen, int& dist, int& h, int& contoursThresh, int& isCalib, int& apply, bool visible);

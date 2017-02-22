@@ -1,13 +1,6 @@
 #include "utils/distance.hpp"
 #include <opencv2/highgui/highgui.hpp>
 
-// Returns the Euclidean distance between two points
-double distance(cv::Point2f& one, cv::Point2f& two)
-{
-    return std::sqrt(std::pow(one.x - two.x, 2) + std::pow(one.y - two.y, 2));
-    // return cv::norm(one.x - two.x, one.y - two.y);
-}
-
 double calibrateFocalLength(cv::Mat& img, double& focalLen, int& dist, int& h, int& contoursThresh, int& isCalib, int& apply, bool visible)
 {
     if (visible)

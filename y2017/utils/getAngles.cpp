@@ -1,4 +1,5 @@
 #include "utils/getAngles.hpp"
+#include <math.h>
 
 double getYaw(const int SCREEN_WIDTH, double hypotenuse, double widthInInches, std::vector<cv::Point>& corners, cv::Point& mc)
 {
@@ -9,10 +10,16 @@ double getYaw(const int SCREEN_WIDTH, double hypotenuse, double widthInInches, s
 	double inchesPerPixel = widthInInches / widthInPixels;
 	double horizDeviation = distFromCenter * inchesPerPixel;
 
-	return std::asin(horizDeviation / hypotenuse) * 180 / PI;
+	return std::asin(horizDeviation / hypotenuse) * 180 / M_PI;
 }
 
 double getPitch(double height, double hypotenuse)
 {
-	return std::asin(height / hypotenuse) * 180 / PI;
+	return std::asin(height / hypotenuse) * 180 / M_PI;
+}
+
+// Returns the atan(y/x) with respect to the x axis, from 0 to 360 degrees
+double atan_wrt_x_axis(double y, double x)
+{
+  return fmod(((atan2(y, x) * 180 / M_PI) + 360), 360);
 }
