@@ -1,13 +1,18 @@
 vision
 images/*fps*
+images/mjpgs/*
+!images/mjpgs/
 # Default image that is taken by main.cpp
 images/snapped_images/main.jpeg
 # Temporary gnuplot graphs
-images/gnuplot/
+images/gnuplot/*
+!images/gnuplot
 *.mjpeg
 
-**/*.log
-logs
+*.log
+# Default location to store parameters and data
+logs/config.yml 
+!logs/camera_calibration_data
 !logs/save_runs
 
 build/
