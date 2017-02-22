@@ -28,10 +28,12 @@ while (1) {
     set xlabel 'Time Tick'
     set ylabel 'Angle (deg)'
     set yrange [-80:80]
-    plot '< tail -n'.DATA_NUM.' '.FILENAME using 0:3 title 'Phi' with linespoints pt 7, \
-         '' using 0:3:(sprintf("%.2f",$3)) with labels nopoint offset char 0,1 font '6' notitle, \
-         '< tail -n'.DATA_NUM.' '.FILENAME using 0:4 title 'Beta' with linespoints pt 7, \
-         '' using 0:4:(sprintf("%.2f",$4)) with labels nopoint offset char 0,1 font '6' notitle, \
+    plot '< tail -n'.DATA_NUM.' '.FILENAME using 0:2 title 'Phi' with linespoints pt 7, \
+         '' using 0:2:(sprintf("%.2f",$2)) with labels nopoint offset char 0,1 font '6' notitle, \
+    # plot '< tail -n'.DATA_NUM.' '.FILENAME using 0:3 title 'Phi' with linespoints pt 7, \
+    #      '' using 0:3:(sprintf("%.2f",$3)) with labels nopoint offset char 0,1 font '6' notitle, \
+         # '< tail -n'.DATA_NUM.' '.FILENAME using 0:4 title 'Beta' with linespoints pt 7, \
+         # '' using 0:4:(sprintf("%.2f",$4)) with labels nopoint offset char 0,1 font '6' notitle, \
          '< tail -n'.DATA_NUM.' '.FILENAME using 0:5 title 'Theta' with linespoints pt 7, \
          '' using 0:5:(sprintf("%.2f",$5)) with labels nopoint offset char 0,1 font '6' notitle
 
