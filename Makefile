@@ -9,11 +9,12 @@ MKDIR = mkdir
 TOUCH = touch
 SED = sed
 MAKEDEPEND = makedepend
+VALGRIND = valgrind
 # Default arguments
 PLOT_FPS_ARGS = -c 1 -n 60 -m 30
 PLOT_VISION_ARGS = -c 4 -n 30 -m 60 -d 30_deg
 
-LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d -lopencv_features2d
+LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d -lopencv_features2d -lpthread
 # LIB = `pkg-config opencv --cflags --libs`
 CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp)
 SRCS = $(CPPSRCS) $(CSRCS)
