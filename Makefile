@@ -62,7 +62,8 @@ mjpg_streamer_instance:
 		echo "Killing existing mjpg_streamer instances"; \
 		killall mjpg_streamer; \
 	fi; \
-	mjpg_streamer -i "input_file.so -f ./images/mjpgs/" -o "output_http.so -w /usr/local/www" 
+	mjpg_streamer -i "/usr/local/lib/input_uvc.so -d /dev/video0 -r 640x480 -f 10 -q 80" -o "/usr/local/lib/output_http.so -w /usr/local/www" 
+	# mjpg_streamer -i "input_file.so -f ./images/mjpgs/" -o "output_http.so -w /usr/local/www" 
 
 gnuplot_vision:
 	# ARGS is for gnuplot_auto_plotter.sh
