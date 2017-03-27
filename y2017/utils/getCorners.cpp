@@ -83,9 +83,9 @@ std::vector<cv::Point2f> CornerExtractor::getCorners()
     findGoodCorners();
 
     // Refine the corners so that distances are absolute minima
-    // refineCorners();
+    refineCorners();
 
-    // orderCorners();
+    orderCorners();
 
     return corners_;
   }

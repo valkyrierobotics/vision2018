@@ -37,7 +37,7 @@ while (1) {
          # '< tail -n'.DATA_NUM.' '.FILENAME using 0:3 title 'Beta' with linespoints pt 7, \
          # '' using 0:3:(sprintf("%.2f",$3)) with labels nopoint offset char 0,1 font '6' notitle, \
 
-    set term wxt 0 persist size 1500,1500
+    set term wxt persist size 1500,1500
     set output
     replot
 }

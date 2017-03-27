@@ -325,11 +325,53 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
     // Temporary replacement for changing the return type
     // rotAngles[0] = phi;
     // rotAngles[1] = beta;
-    rotAngles[0] = 0;
+    rotAngles[0] = -x; // Negative because counter clockwise is positive by pose
     rotAngles[1] = z;
     rotAngles[2] = theta;
     // std::cout << rotAngles << std::endl;
     return rotAngles;
+}
+
+double getFocalLenMM()
+{
+    cv::FileStorage fs;
+    fs.open(CAMERA_CONFIG_FILE, cv::FileStorage::READ);
+    // Read camera matrix and distortion coefficients from file
+
+    cv::Mat intrinsics, distortion;
+    fs["Camera_Matrix"] >> intrinsics;
+
+    // Close the input file
+    fs.release();
+
+    std::cout << "X0: " << intrinsics.at<double>(0, 2) << "\n";
+
+    // Average focal length x (f_x) and focal length y (f_y)
+    return (intrinsics.at<double>(0, 0) + intrinsics.at<double>(1, 1)) / 2.0;
+}
+
+double getScalePixToMM()
+{
+    // Intrinsic width of Logitech C920 sensor in mm
+    return 6.22 / SCREEN_WIDTH;
+}
+
+// Converts inches to pixels based on the intrinsic sensor width
+double inchesToPixels(double in)
+{
+    // Inches -> MM -> Pixels
+    return in * INCHES_TO_MM / getScalePixToMM();
+}
+
+// Returns the angular position of the center of mass relative to the perspective line
+// of the camera, in degrees
+// All distances must be in inches
+double getYawToCenterOfMass(cv::Point& mc, double euclidDist)
+{
+    double distInPixels = (mc.x - SCREEN_WIDTH/2);
+
+    // Numerator is pixels -> mm -> inches
+    return std::asin((distInPixels * getScalePixToMM() / INCHES_TO_MM)/ euclidDist) * 180 / M_PI;
 }
 
 int main (int argc, char *argv[])
@@ -475,24 +517,42 @@ int main (int argc, char *argv[])
 
     int lineThickness = 1;
 
-    udp_client_server::udp_client client(TARGET_ADDR, UDP_PORT);
-    udp_client_server::udp_server server(HOST_ADDR, UDP_PORT);
+    // udp_client_server::udp_client client(TARGET_ADDR, UDP_PORT);
+    // udp_client_server::udp_server server(HOST_ADDR, UDP_PORT);
 
-    std::thread netSend (sendData, std::ref(client));
-    netSend.detach();
-    std::thread netReceive (receiveData, std::ref(server));
-    netReceive.detach();
+    // std::thread netSend (sendData, std::ref(client));
+    // netSend.detach();
+    // std::thread netReceive (receiveData, std::ref(server));
+    // netReceive.detach();
 
-    cv::VideoCapture camera (CAMERA_NUM);
+    // No video passed in
+    cv::VideoCapture camera;
+    if (argc == 1)
+    {
+        std::cout << "Using camera\n";
+        camera = cv::VideoCapture (CAMERA_NUM);
+        camera.set(CV_CAP_PROP_EXPOSURE, 0.01);
+    }
+    else
+    {
+        std::cout << "Opening video from " << argv[1] << "\n";
+        camera = cv::VideoCapture (argv[1]);
+    }
     if (!camera.isOpened())
         throw std::runtime_error(std::string("Error - Could not open camera at port ") + std::to_string(CAMERA_NUM));
-    else
-        std::cout << "Opened camera at port " << CAMERA_NUM << "\n";
 
-    if (argc == 2)
-        std::cout << "Opening image from " << argv[1] << "\n";
-    else
-        std::cout << "Using camera\n";
+    std::cout << "Opened camera at port " << CAMERA_NUM << "\n";
+    std::cout << "Camera exposure: " << camera.get(CV_CAP_PROP_EXPOSURE) << std::endl;
+    std::cout << "Camera fps: " << camera.get(CV_CAP_PROP_FPS) << std::endl;
+    std::cout << "Camera frame count: " << camera.get(CV_CAP_PROP_FRAME_COUNT) << std::endl;
+
+    int frameInd = 0;
+    int totalFrames = camera.get(CV_CAP_PROP_FRAME_COUNT);
+
+    // if (argc == 2)
+    //     std::cout << "Opening image from " << argv[1] << "\n";
+    // else
+    //     std::cout << "Using camera\n";
 
     std::cout << "\n";
     std::cout << " ============== NOTICE ============= " << "\n";
@@ -501,6 +561,7 @@ int main (int argc, char *argv[])
     std::cout << "| Press 'c' to save the input image |" << "\n";
     std::cout << "| Press 's' to save parameters      |" << "\n";
     std::cout << "| Press 'l' to load parameters      |" << "\n";
+    std::cout << "| Press 'r' to restart video        |" << "\n";
     std::cout << "| Press ' ' to pause                |" << "\n";
     std::cout << "|                                   |" << "\n";
     std::cout << " =================================== " << "\n";
@@ -511,16 +572,18 @@ int main (int argc, char *argv[])
 
     std::chrono::high_resolution_clock::time_point start, end;
 
+    bool isOutputColored = true;
+    int imgSizeX = 640;
+    int imgSizeY = 480;
+    int stream_fps = 30;
+    cv::VideoWriter os ("images/snapped_images/main.avi", CV_FOURCC('P', 'I', 'M', '1'), stream_fps, cv::Size(imgSizeX, imgSizeY), isOutputColored);
+    // int picId = 0;
 
     while (kill != 'q')
     {
 #if FPS
     start = std::chrono::high_resolution_clock::now();
 #endif
-        // Press space to pause program, then any key to resume
-        if (kill == ' ')
-            cv::waitKey(0);
-
         // Press s to save values into FileStorage
         if (kill == 's')
         {
@@ -696,36 +759,62 @@ int main (int argc, char *argv[])
             fs["Corner Extractor Parameters"]["Minimum Distance"] >> cornerParams.minDist;
             fs["Corner Extractor Parameters"]["k"] >> cornerParams.k;
             fs["Corner Extractor Parameters"]["Block Size"] >> cornerParams.blockSize;
-            fs["Corner Extractor Parameters"]["Max Corners "] >> cornerParams.maxCorners;
+            fs["Corner Extractor Parameters"]["Max Corners"] >> cornerParams.maxCorners;
             fs["Corner Extractor Parameters"]["Win Size"] >> cornerParams.winSize;
             fs["Corner Extractor Parameters"]["Zero Zone"] >> cornerParams.zeroZone;
 
             fs.release();
-
         }
 
 #if FPS
         start = std::chrono::high_resolution_clock::now();
 #endif
         // TODO: acquire input through video
-        if (argc == 2)
+        // if (argc == 2)
+        // {
+        //     img = cv::imread(argv[1]);
+        // }
+        // else
+        // Press space to pause program, then any key to resume
+        // if (kill == ' ')
+        //     cv::waitKey(0);
+
+        if (kill != ' ')
         {
-            img = cv::imread(argv[1]);
-        }
-        else
-        {
+            frameInd++;
             camera >> img;
+            if (frameInd == totalFrames)
+            {
+                frameInd = 0;
+                camera.set(CV_CAP_PROP_POS_FRAMES, 0);
+            }
 #if IS_CAMERA_UPSIDE_DOWN
             flip(img, img, 0);
 #endif
+            rgb = img.clone();
         }
-        rgb = img.clone();
+        else
+        {
+            img = rgb.clone();
+        }
+        if (kill == 'r')
+            camera.set(CV_CAP_PROP_POS_FRAMES, 0);
 
-        if (kill == 'c')
+        if (kill == 'p')
         {
             std::cout << "Writing input image to images/snapped_images/main.jpg\n";
             std::string s = "images/snapped_images/main.jpg";
             cv::imwrite(s, img);
+        }
+        // kill = 'v';
+        if (kill == 'v')
+        {
+            // std::cout << "Writing input video to images/mjpgs\n";
+            // std::string s = "images/mjpgs/main" + std::to_string(picId) + ".mjpeg";
+            // picId++;
+            std::cout << "Writing input video to images/snapped_images/\n";
+            if (os.isOpened())
+                os.write(img);
         }
 
 #if CALIB && STREAM
@@ -786,14 +875,14 @@ int main (int argc, char *argv[])
         {
             boundedRects = getBoundedRects(contours);
             {
-                if (CALIB)
+#if CALIB
                 {
                     uShapeThresholdWindows(img, contours, boundedRects, minDistFromContours, maxDistFromContours, applyUShapeThreshold, uShapeThresholdWindow, STREAM);
                     sideRatioThresholdWindows(img, contours, boundedRects, sideRatioParam, sideRatioMaxDeviationParam, applySideRatioThreshold, sideRatioThresholdWindow, STREAM);
                     areaRatioThresholdWindows(img, contours, boundedRects, minAreaParam, maxAreaParam, areaRatioParam, areaRatioMaxDeviationParam, applyAreaRatioThreshold, areaRatioThresholdWindow, STREAM);
                     angleThresholdWindows(img, contours, boundedRects, angleMaxDeviationParam, applyAngleThreshold, angleThresholdWindow, STREAM);
                 }
-                else
+#else
                 {
                     // Filter out contours that do not match the 'U' shape
                     uShapeThreshold(contours, boundedRects, minDistFromContours, maxDistFromContours);
@@ -801,6 +890,7 @@ int main (int argc, char *argv[])
                     areaRatioThreshold(contours, boundedRects, minArea, maxArea, areaRatio, areaRatioMaxDeviation);
                     angleThreshold(contours, boundedRects, angleMaxDeviation);
                 }
+#endif
             }
             if (contours.size() > 0)
             {
@@ -835,25 +925,28 @@ int main (int argc, char *argv[])
                         // cv::imshow("Contours and Rects", tmp);
                     }
                     cv::Mat img_gray, rectROI;
-                    cv::cvtColor(rgb, img_gray, CV_BGR2GRAY);
+                    img_gray = img.clone();
+                    // cv::cvtColor(rgb, img_gray, CV_BGR2GRAY);
+                    cv::cvtColor(img_gray, img_gray, CV_BGR2GRAY);
                     // Find only the region of the grayscale image inside the bounding box
                     img_gray.copyTo(rectROI, mask);
+                    // cv::Canny(rectROI, rectROI, threshLow, threshHigh);
                     mc = getCenterOfMass(contours[goalInd]);
                     gamePiece.update(rectROI, contours[goalInd], mc);
                     corners = gamePiece.getCorners();
                     // Draw the corners of the target's contour
-                    // {
-                    //     char str[100];
-                    //     for( size_t i = 0; i < corners.size(); ++i )
-                    //     {
-                    //         sprintf(str, "%zu", i);
-                    //         cv::putText(img_gray, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
-                    //         int r = 1;
-                    //         // circle( img_gray, corners[i], r, cv::Scalar(rng_.uniform(0,255), rng_.uniform(0,255), rng_.uniform(0,255)), -1, 8, 0 );
-                    //         circle( img_gray, corners[i], r, cv::Scalar(0, 255, 255), -1, 8, 0 );
-                    //     }
-                    // }
-                    // cv::imshow("Good Corners", img_gray);
+                    {
+                        char str[100];
+                        for( size_t i = 0; i < corners.size(); ++i )
+                        {
+                            sprintf(str, "%zu", i);
+                            cv::putText(img_gray, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
+                            int r = 1;
+                            // circle( img_gray, corners[i], r, cv::Scalar(rng_.uniform(0,255), rng_.uniform(0,255), rng_.uniform(0,255)), -1, 8, 0 );
+                            circle( img_gray, corners[i], r, cv::Scalar(0, 255, 255), -1, 8, 0 );
+                        }
+                    }
+                    cv::imshow("Good Corners", img_gray);
                     // Draw in filled circles of radius 3 at the identified corners
                     // for (size_t i = 0; i < goodCorners.size(); ++i)
                     // {
@@ -862,7 +955,7 @@ int main (int argc, char *argv[])
                     // cv::imshow("Corners", imgBlank);
                 }
 
-#if 0
+// #if 0
 
                 // Find the corners of the target's contours
                 // std::vector<cv::Point> corners = getCorners(contours[goalInd], SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -871,27 +964,49 @@ int main (int argc, char *argv[])
                 //     cv::cornerSubPix(img, corners, cv::Size(3,3), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT, 10, 100));
 
                 // cv::Vec3f angleVec = cv::Vec3f(0,0,0);
+                // Temporary storage in vector
+                // Distances in inches
                 cv::Vec3f angleVec = getAngularPosition(img, rvec, tvec, corners, CAMERA_CONFIG_FILE, GAME_ELEMENT_WIDTH, GAME_ELEMENT_HEIGHT);
 
+                // std::cout << getScalePixToMM() << std::endl;
+                // std::cout << "\nDistances in pixels\n";
+                // std::cout << "X: " << ((mc.x - SCREEN_WIDTH / 2) * getScalePixToMM() / INCHES_TO_MM) << "\n";
+                // std::cout << "Z: " << angleVec[1] << "\n";
+                // std::cout << "MC: " << (mc.x - SCREEN_WIDTH / 2) << "\n";
+                // std::cout << "X from POSE: " << angleVec[0] << "\n";
+                // getFocalLenMM();
+                // yaw = getYawToCenterOfMass(mc, angleVec[1]);
+                const double DFOV = 78; // Diagonal FOV in degrees for Logitech C920
+                // const double DFOV = 43.875; // Diagonal FOV in degrees for Logitech C920
+                double DSCREEN = std::sqrt(SCREEN_WIDTH * SCREEN_WIDTH + SCREEN_HEIGHT * SCREEN_HEIGHT); // Diagonal FOV of camera screen
+                const double PIX_TO_DEG = DFOV / DSCREEN;
+
                 // Get the distance in inches and angles in degrees
-                calibrateFocalLength(img, focalLength, calibDistance, heightDisplacement, contoursThresh, applyDistanceCalib, showDistanceCalib, distanceCalib);
+                // calibrateFocalLength(img, focalLength, calibDistance, heightDisplacement, contoursThresh, applyDistanceCalib, showDistanceCalib, distanceCalib);
                 // double euclidDist = getEuclideanDistance(rectPoints, GAME_ELEMENT_WIDTH, focalLength, calibDistance, applyDistanceCalib);
-                // yaw = getYaw(SCREEN_WIDTH, euclidDist, GAME_ELEMENT_WIDTH, corners, mc);
+                // yaw = getYaw(SCREEN_WIDTH, angelVec[1], GAME_ELEMENT_WIDTH, corners, mc);
                 // pitch = getPitch(height, euclidDist);
 
+
+                // I'll refactor everything later, here's the data that
+                // will be sent to the roboRIO
+                double parallelDist = angleVec[1]; // Distance, parallel to ground
+                double theta = angleVec[2]; // Angular position
+                yaw = ((mc.x - SCREEN_WIDTH / 2) * PIX_TO_DEG); // Robot heading
+                // std::cout << "Yaw: " << yaw << "\n";
                 {
                     if (!std::isfinite(yaw)) yaw = -1;
                     // if (!std::isfinite(pitch)) pitch = -1;
                     // if (!std::isfinite(euclidDist)) euclidDist = -1;
                     if (!std::isfinite(angleVec[0])) angleVec[0] = -1;
-                    if (!std::isfinite(angleVec[1])) angleVec[1] = -1;
-                    if (!std::isfinite(angleVec[2])) angleVec[2] = -1;
+                    if (!std::isfinite(parallelDist)) parallelDist = -1;
+                    if (!std::isfinite(theta)) theta = -1;
 
                     std::string gnuplotBuf = std::to_string(yaw) 
                         // + " " + std::to_string(euclidDist) 
                         + " " + std::to_string(angleVec[0])
-                        + " " + std::to_string(angleVec[1])  // Euclidean distance
-                        + " " + std::to_string(angleVec[2]); // Angular position
+                        + " " + std::to_string(parallelDist)  // Euclidean distance
+                        + " " + std::to_string(theta); // Angular position
 
                     dataFile << gnuplotBuf.c_str() << std::endl;
                 }
@@ -917,7 +1032,7 @@ int main (int argc, char *argv[])
                     //     }
                     // }
                 }
-#endif
+// #endif
             }
         }
 #if CALIB
@@ -957,8 +1072,21 @@ int main (int argc, char *argv[])
 #if STREAM
         kill = '~'; // Junk value that should never be used as an action
 #else
-        kill = cv::waitKey(5); // Only wait x milliseconds if using cv::imshow()
+        // Paused
+        if (kill == ' ') 
+        {
+            kill = cv::waitKey(5); // Only wait x milliseconds if using cv::imshow()
+            if (kill == ' ') // Unpause
+                kill = '~';
+            if (kill == -1) // No key was pressed while program is paused, so stay paused
+                kill = ' ';
+        }
+        else
+        {
+            kill = cv::waitKey(5); // Only wait x milliseconds if using cv::imshow()
+        }
 #endif
     }
+    os.release();
     return 0;
 }

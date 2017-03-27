@@ -10,7 +10,7 @@ const bool STREAM = false;
 // Flip image if camera is upside down
 #define IS_CAMERA_UPSIDE_DOWN 0
 // Index of camera
-#define CAMERA_NUM 1
+#define CAMERA_NUM 0
 
 #define MAX_GAME_PIECE_CORNERS 4
 
@@ -23,6 +23,7 @@ const double CAMERA_HEIGHT = 0.5;
 const double GAME_ELEMENT_WIDTH = 2;
 const double GAME_ELEMENT_HEIGHT = 5;
 #define GAME_ELEMENT_SPACING 6.25 // Spacing between the two parts of the tape
+#define INCHES_TO_MM 25.4
 
 double pitch = 0;
 double yaw = 0;
