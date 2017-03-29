@@ -805,71 +805,19 @@ int main (int argc, char *argv[])
         goalInd = getLeftMostContourIndex(contours);
         boundedRects[goalInd].points(rectPoints); // Extract the corners of the target's bounded box
 
-        cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
-        // Draw a filled in bounded rectangle at the goal
-        cv::Point rectIntPoints [MAX_GAME_PIECE_CORNERS];
-        cvtPoint(rectPoints, rectIntPoints);
-        cv::fillConvexPoly(mask, rectIntPoints, MAX_GAME_PIECE_CORNERS, PURPLE);
+        cv::Point mc = getCenterOfMass(contours[goalInd]);
 
-        cv::Point mc;
-        std::vector<cv::Point2f> corners;
         {
-          cv::Mat img_gray, rectROI;
-          img_gray = img.clone();
-          cv::cvtColor(img_gray, img_gray, CV_BGR2GRAY);
-          // Find only the region of the grayscale image inside the bounding box
-          img_gray.copyTo(rectROI, mask);
-          mc = getCenterOfMass(contours[goalInd]);
-          // TODO: Fix this, currently it's way too small, probably not working correctly
-          // std::cout << (game_piece::SPACING / 2.0 + game_piece::WIDTH / 2.0) * camera::MM_OVER_PIXELS << std::endl;
-          translatePoint(mc, (game_piece::SPACING / 2.0 + game_piece::WIDTH / 2.0) * camera::MM_OVER_PIXELS);
-
-          // Extract corners
-          gamePiece.update(rectROI, contours[goalInd], mc);
-          corners = gamePiece.getCorners();
-#if CALIB
-          // Draw the corners of the target's contour
-          {
-            char str[20];
-            for( size_t i = 0; i < corners.size(); ++i )
-            {
-              sprintf(str, "%zu", i);
-              cv::putText(img_gray, str, corners[i], CV_FONT_HERSHEY_COMPLEX_SMALL, 0.75, BLUE_GREEN, 1, 8, false);
-              int r = 2;
-              circle( img_gray, corners[i], r, cv::Scalar(255, 255, 255), -1, 8, 0 );
-            }
-          }
-          cv::imshow("Good Corners", img_gray);
-#endif
-        }
-
-        // Temporary storage in vector
-        // Distances in inches
-        cv::Vec3f angleVec = getAngularPosition(img, rvec, tvec, corners, intrinsics, distortion, camera_coords, camera::CONFIG_FILE, game_piece::WIDTH, game_piece::ELEVATION);
-
-        double parallelDist = angleVec[1]; // Distance, parallel to ground
-        double theta = angleVec[2]; // Angular position
-        double yaw = ((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG); // Robot heading
-        {
+          double yaw = ((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG); // Robot heading
           if (!std::isfinite(yaw)) yaw = -1;
-          if (!std::isfinite(parallelDist)) parallelDist = -1;
-          if (!std::isfinite(theta)) theta = -1;
-
-          std::string gnuplotBuf = std::to_string(yaw) 
-            + " " + std::to_string(camera_coords.x)
-            + " " + std::to_string(camera_coords.z)  // Euclidean distance
-            + " " + std::to_string(camera_coords.theta); // Angular position
-
+          std::string gnuplotBuf = std::to_string(yaw);
           dataFile << gnuplotBuf.c_str() << std::endl;
         }
-        {
-          // Draw all the contours
-          drawContours(img, contours, -1, RED, lineThickness, 8);
-          drawBoundedRects(img, boundedRects, PURPLE);
-
-          cv::line(img, cv::Point(camera::SCREEN_WIDTH / 2, mc.y), mc, YELLOW); // Draw line from center of img to center of mass
-          cv::circle(img, mc, 5, YELLOW); // Draw center of mass
-        }
+#if CALIB
+        // Draw all the contours
+        drawContours(img, contours, -1, RED, lineThickness, 8);
+        drawBoundedRects(img, boundedRects, PURPLE);
+#endif
       }
     }
 #if CALIB
@@ -902,7 +850,7 @@ int main (int argc, char *argv[])
       // fps = 1.0 / timeElapsed;
       // std::string gnuplotBuf = std::to_string(fps);
 
-      std::cout << timeElapsed << std::endl;
+      std::cout << "Time elapsed in milliseconds: " << timeElapsed << std::endl;
       std::string gnuplotBuf = std::to_string(timeElapsed) + "  " + std::to_string(timeElapsed / ++fpsTick);
 
       fpsFile << gnuplotBuf.c_str() << std::endl;
