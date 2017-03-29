@@ -2,6 +2,7 @@
 #include <iterator>
 #include <algorithm>
 #include <utility>
+#include <numeric>
 
 // Reorder a vector values based off of a vector of indexes
 // This implementation destroys the vector of indexes, but is extremely fast

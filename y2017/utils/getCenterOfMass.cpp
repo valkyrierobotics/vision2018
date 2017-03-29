@@ -1,9 +1,13 @@
 #include "utils/getCenterOfMass.hpp"
+#include <iostream>
 
 cv::Point getCenterOfMass(std::vector<cv::Point>& contour)
 {
     if (contour.size() <= 0)
-        throw std::runtime_error("No points in contour to get center of mass\n");
+    {
+        std::cerr << "No points in contour to get center of mass" << std::endl;
+        return cv::Point();
+    }
 
     cv::Moments mu = cv::moments(contour, false);
 

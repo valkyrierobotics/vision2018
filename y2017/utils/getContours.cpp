@@ -5,7 +5,7 @@ std::vector< std::vector<cv::Point> > getContours(const cv::Mat& src, int contou
 {
 	std::vector< std::vector<cv::Point> > contours;
 	std::vector<cv::Vec4i> hierarchy;
-    cv::Mat tmp;
+  cv::Mat tmp;
 
 	// Convert src to gray format
 	cv::cvtColor(src, tmp, CV_BGR2GRAY);

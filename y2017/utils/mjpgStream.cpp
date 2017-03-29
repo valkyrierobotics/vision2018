@@ -1,4 +1,5 @@
 #include "utils/mjpgStream.hpp"
+#include <iostream>
 
 void mjpgStream(std::string& outFile, cv::Mat& img)
 {
@@ -13,7 +14,7 @@ void mjpgStream(std::string& outFile, cv::Mat& img)
     if (os.isOpened())
         os.write(img);
     else
-        throw std::runtime_error(std::string("Error: Could not write to ") + outFile);
+        std::cerr << "ERROR - Could not write to " << outFile << std::endl;
 }
 
 void mjpgStream(cv::Mat& img)

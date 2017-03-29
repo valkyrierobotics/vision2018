@@ -3,6 +3,6 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-void gaussianBlur(cv::Mat &in, int blur_ksize, int sigmaX, int sigmaY); 
+void gaussianBlur(cv::Mat &img, int blur_ksize, int sigmaX, int sigmaY); 
 
 #endif // GAUSSIAN_BLUR_HPP  
