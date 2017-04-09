@@ -8,23 +8,6 @@
 #include "distance.hpp"
 #include "../common/constants.hpp"
 
-#define DEFAULT_CORNER_PARAMS \
-{ \
-  .windowName = "Corner Extractor", \
-  .showWindows = 1, \
-  .applyFilter = 1, \
-  .qualityLevel = 1, \
-  .minDist = 10, \
-  .k = 0.04, \
-  .blockSize = 3, \
-  .maxCorners = MAX_GAME_PIECE_CORNERS, \
-  .useHarrisDetector = false, \
-  .winSize = cv::Size(5, 5), \
-  .zeroZone = cv::Size(-1, -1), \
-  .criteria = cv::TermCriteria( \
-      cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001) \
-}
-
 class CornerExtractor
 {
  public:
@@ -62,7 +45,7 @@ class CornerExtractor
    * @brief Update the corner extractor with information from the image.
    *
    * @param[in]     img       BGR image.
-   * @param[in,out] contours  The contours of the game piece.
+   * @param[in]     contours  The contours of the game piece.
    * @param[in]     cm        The center of masscenter of mass.
    */
   void update(cv::Mat& img, std::vector<cv::Point>& pts, cv::Point& cm);

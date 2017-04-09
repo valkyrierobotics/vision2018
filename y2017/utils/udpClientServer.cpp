@@ -19,6 +19,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define _GLIBCXX_USE_CXX11_ABI 0 // This file cannot run with GCC 5.x
+
 
 namespace udp_client_server
 {

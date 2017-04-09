@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include "udpClientServer.hpp"
+#include "../vision_data.pb.h"
+#include "../../aos/udp.h"
 
 const char START_SIGNAL = '@';
 const char STOP_SIGNAL = '#';
@@ -21,5 +23,6 @@ char buff[50];
 
 void sendData (udp_client_server::udp_client& client);
 void receiveData (udp_client_server::udp_server& server);
+void sendProtobuf(y2017::vision::VisionData& msg, aos::events::TXUdpSocket& client);
 
 #endif // NET_THREAD_HPP

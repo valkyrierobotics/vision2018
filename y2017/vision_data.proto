@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package y2017.vision;
+
+message VisionData {
+  optional int64 image_timestamp = 1;
+  optional int64 send_timestamp = 2;
+  optional double yaw = 3;
+}

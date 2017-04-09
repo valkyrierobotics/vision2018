@@ -66,3 +66,11 @@ void receiveData (udp_client_server::udp_server& server)
             std::cerr << "PAUSE_SIGNAL\n";
     }
 }
+
+void sendProtobuf(y2017::vision::VisionData& msg, aos::events::TXUdpSocket& client)
+{
+  std::string buf;
+  msg.SerializeToString(&buf); 
+  // Cannot use strlen for byte arrays
+  client.Send(buf.c_str(), sizeof(buf) / sizeof(buf[0]));
+}

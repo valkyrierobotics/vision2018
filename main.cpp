@@ -45,6 +45,53 @@
 #include "y2017/filters/mergeFinalWindows.hpp"
 #include "y2017/filters/shapeThresholdsWindows.hpp"
 
+#include "y2017/vision_data.pb.h"
+
+#include "aos/udp.h"
+
+namespace chrono = ::std::chrono;
+
+namespace aos {
+
+class monotonic_clock {
+  public:
+    typedef ::std::chrono::nanoseconds::rep rep;
+    typedef ::std::chrono::nanoseconds::period period;
+    typedef ::std::chrono::nanoseconds duration;
+    typedef ::std::chrono::time_point<monotonic_clock> time_point;
+
+    static monotonic_clock::time_point now() noexcept {
+      struct timespec current_time;
+      if (clock_gettime(CLOCK_MONOTONIC, &current_time) != 0) {
+        printf("clock_gettime(%jd, %p) failed",
+            static_cast<uintmax_t>(CLOCK_MONOTONIC), &current_time);
+      }
+      // const chrono::nanoseconds offset =
+      //   (&global_core == nullptr || global_core == nullptr ||
+      //    global_core->mem_struct == nullptr)
+      //   ? chrono::nanoseconds(0)
+      //   : chrono::nanoseconds(global_core->mem_struct->time_offset);
+      const chrono::nanoseconds offset = chrono::nanoseconds(0);
+
+      return time_point(::std::chrono::seconds(current_time.tv_sec) +
+          ::std::chrono::nanoseconds(current_time.tv_nsec)) + offset;
+    }
+
+    static constexpr bool is_steady = true;
+
+    // Returns the epoch (0).
+    static constexpr monotonic_clock::time_point epoch() {
+      return time_point(zero());
+    }
+
+    static constexpr monotonic_clock::duration zero() { return duration(0); }
+
+    static constexpr time_point min_time{
+      time_point(duration(::std::numeric_limits<duration::rep>::min()))};
+};
+
+}; // namespace aos
+
 // Checks if a matrix is a valid rotation matrix.
 bool isRotationMatrix(cv::Mat& R)
 {
@@ -69,7 +116,7 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R)
 {
   if (!isRotationMatrix(R))
   {
-    std::cout << "NOT A ROTATION MATRIX\n";
+    ::std::cout << "NOT A ROTATION MATRIX\n";
     return cv::Vec3f (-1.0, -1.0, -1.0);
   }
 
@@ -104,7 +151,7 @@ bool containsNaN(cv::Mat& m)
   return false;
 }
 
-int getLeftMostContourIndex(std::vector< std::vector<cv::Point> >& contours)
+int getLeftMostContourIndex(::std::vector< ::std::vector<cv::Point> >& contours)
 {
   double minDistance = camera::SCREEN_WIDTH, ind = 0, curr = 0;
   cv::Point leftMost = cv::Point(0, camera::SCREEN_HEIGHT/2);
@@ -121,7 +168,7 @@ int getLeftMostContourIndex(std::vector< std::vector<cv::Point> >& contours)
   return ind;
 }
 
-template <typename T>
+  template <typename T>
 cv::Point cvtPoint(const T& src)
 {
   cv::Point dest = src;
@@ -129,22 +176,22 @@ cv::Point cvtPoint(const T& src)
 }
 
 // Converts a vector of vectors of cv::Point_<T> to cv::Point_<int>
-template <typename T>
-void cvtPoint(const std::vector< std::vector<T> >& src, std::vector< std::vector<cv::Point> >& dest)
+  template <typename T>
+void cvtPoint(const ::std::vector< ::std::vector<T> >& src, ::std::vector< ::std::vector<cv::Point> >& dest)
 {
   for (size_t j = 0; j < src.size(); ++j)
     for (size_t k = 0; k < src.size(); ++k)
       dest[j].push_back(src[k]);
 }
 // Converts a vector of cv::Point_<int> to cv::Point_<T>
-template <typename T>
-void cvPointTo(const std::vector<cv::Point>& src, std::vector<T>& dest)
+  template <typename T>
+void cvPointTo(const ::std::vector<cv::Point>& src, ::std::vector<T>& dest)
 {
   for (size_t i = 0; i < src.size(); ++i)
     dest.push_back(src[i]);
 }
 
-template <typename T1, typename T2, size_t N>
+  template <typename T1, typename T2, size_t N>
 void cvtPoint(T1 (&src)[N], T2 (&dest)[N])
 {
   for (size_t i = 0; i < N; ++i)
@@ -161,16 +208,16 @@ int useRansac = 0;
 // Return (-1.0, -1.0, -1.0) on failure
 cv::Vec3f getAngularPosition(cv::Mat& img,
     cv::Mat& rvec, cv::Mat& tvec,
-    std::vector<cv::Point2f>& corners,
+    ::std::vector<cv::Point2f>& corners,
     cv::Mat& intrinsics, cv::Mat& distortion,
     camera::GlobalCoordinates& coords,
-    const std::string& CAMERA_CONFIG_FILE,
+    const ::std::string& CAMERA_CONFIG_FILE,
     double targetWidth, double targetHeight)
 {
   if (corners.size() != 4) return cv::Vec3f (-1.0, -1.0, -1.0);
 
-  std::vector<cv::Point2f> projectedAxesPoints;
-  std::vector<cv::Point3f> targetPoints, axesPoints;
+  ::std::vector<cv::Point2f> projectedAxesPoints;
+  ::std::vector<cv::Point3f> targetPoints, axesPoints;
 
   axesPoints.push_back(cv::Point3f(0.0, 0.0, 0.0));
   axesPoints.push_back(cv::Point3f(3.0, 0.0, 0.0));
@@ -202,7 +249,7 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
 
   if (containsNaN(rvec) || containsNaN(tvec)) 
   {
-    std::cout << "NaN in rvec or tvec" << std::endl; 
+    ::std::cout << "NaN in rvec or tvec" << "\n"; 
     return cv::Vec3f (-1.0, -1.0, -1.0);
   }
 
@@ -213,12 +260,12 @@ cv::Vec3f getAngularPosition(cv::Mat& img,
   cv::Rodrigues(rvec, rmat); // Change the vectors to matrices
 
   cv::Mat camTransVec = -rmat.t() * tvec;
-  // double r = std::sqrt(std::pow(camTransVec.at<double>(0, 0), 2) + std::pow(camTransVec.at<double>(0, 1), 2) + std::pow(camTransVec.at<double>(0, 2), 2));
+  // double r = ::std::sqrt(::std::pow(camTransVec.at<double>(0, 0), 2) + ::std::pow(camTransVec.at<double>(0, 1), 2) + ::std::pow(camTransVec.at<double>(0, 2), 2));
 
   coords.x = camTransVec.at<double>(0, 0);
   coords.y = camTransVec.at<double>(0, 1);
   coords.z = camTransVec.at<double>(0, 2);
-  coords.euclidDist = std::sqrt(std::pow(coords.x, 2) + std::pow(coords.y, 2) + std::pow(coords.z, 2));
+  coords.euclidDist = ::std::sqrt(::std::pow(coords.x, 2) + ::std::pow(coords.y, 2) + ::std::pow(coords.z, 2));
   coords.theta = toDeg(atan(coords.x / coords.z));
 
 #if CALIB
@@ -258,20 +305,20 @@ double getYawToCenterOfMass(cv::Point& mc, double euclidDist)
   double distInPixels = (mc.x - camera::SCREEN_WIDTH/2);
 
   // Numerator is pixels -> mm -> inches
-  return std::asin((distInPixels * camera::MM_OVER_PIXELS / INCHES_OVER_MM)/ euclidDist) * 180 / M_PI;
+  return ::std::asin((distInPixels * camera::MM_OVER_PIXELS / INCHES_OVER_MM)/ euclidDist) * 180 / M_PI;
 }
 
 // Translates a point by a specified distance x and y
 void translatePoint(cv::Point& pt, double dispX = 0, double dispY = 0)
 {
-  // std::cout << "Start\n";
-  // std::cout << "pt.x: " << pt.x << "\n";
-  // std::cout << "pt.y: " << pt.y << "\n";
+  // ::std::cout << "Start\n";
+  // ::std::cout << "pt.x: " << pt.x << "\n";
+  // ::std::cout << "pt.y: " << pt.y << "\n";
   // pt += cv::Point(dispX, dispY);
   pt.x += dispX;
   pt.y += dispY;
-  // std::cout << "pt.x: " << pt.x << "\n";
-  // std::cout << "pt.y: " << pt.y << "\n";
+  // ::std::cout << "pt.x: " << pt.x << "\n";
+  // ::std::cout << "pt.y: " << pt.y << "\n";
 }
 
 int main (int argc, char *argv[])
@@ -378,8 +425,8 @@ int main (int argc, char *argv[])
   int maxDistFromContours = 15;
 
   int contoursThresh = 140;
-  std::vector< std::vector<cv::Point> > contours;
-  std::vector<cv::RotatedRect> boundedRects;
+  ::std::vector< ::std::vector<cv::Point> > contours;
+  ::std::vector<cv::RotatedRect> boundedRects;
   cv::Point2f rectPoints[4];
   int goalInd = 0;
 
@@ -404,18 +451,35 @@ int main (int argc, char *argv[])
   int maxCorners = 4;
   int minQualityRatio = 80;
   int minDist = 10;
-  // This is hella hacky
-  CornerExtractor::CornerParams cornerParams = DEFAULT_CORNER_PARAMS;
+
+  // Probably change POD struct to just initialize these
+  CornerExtractor::CornerParams cornerParams = 
+  {
+    .windowName = "Corner Extractor", 
+    .showWindows = 1, 
+    .applyFilter = 1, 
+    .qualityLevel = 1, 
+    .minDist = 10, 
+    .k = 0.04, 
+    .blockSize = 3, 
+    .maxCorners = MAX_GAME_PIECE_CORNERS, 
+    .useHarrisDetector = false, 
+    .winSize = cv::Size(5, 5), 
+    .zeroZone = cv::Size(-1, -1), 
+    .criteria = cv::TermCriteria( 
+        cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001) 
+  };
+
   CornerExtractor gamePiece (cornerParams);
 
   // Gnuplot parameters
-  std::ofstream fpsFile, dataFile;
-  fpsFile.open(FPS_FILE.c_str(), std::ios::out);
-  dataFile.open(PROC_DATA_FILE.c_str(), std::ios::out);
+  ::std::ofstream fpsFile, dataFile;
+  fpsFile.open(FPS_FILE.c_str(), ::std::ios::out);
+  dataFile.open(PROC_DATA_FILE.c_str(), ::std::ios::out);
 
   double avg = 0;
   double fpsTick = 1;
-	double fps = 0;
+  double fps = 0;
 
   int lineThickness = 1;
 
@@ -433,30 +497,40 @@ int main (int argc, char *argv[])
   // Close the input file
   fs.release();
 
+  // std::cout << TARGET_ADDR << std::endl;
   // udp_client_server::udp_client client(TARGET_ADDR, UDP_PORT);
   // udp_client_server::udp_server server(HOST_ADDR, UDP_PORT);
+  aos::events::TXUdpSocket client (TARGET_ADDR, UDP_PORT);
 
-  // std::thread netSend (sendData, std::ref(client));
+  // ::std::thread netSend (sendData, ::std::ref(client));
   // netSend.detach();
-  // std::thread netReceive (receiveData, std::ref(server));
+  // ::std::thread netReceive (receiveData, ::std::ref(server));
   // netReceive.detach();
+
+  // Protobuf message to send to roboRIO
+  // ::std::unique_ptr<y2017::vision::VisionData> msg (new y2017::vision::VisionData);
+  y2017::vision::VisionData msg;
 
   // No video passed in
   cv::VideoCapture cap;
   if (argc == 1)
   {
-    std::cout << "Using camera at port " << camera::ID << "\n";
+    ::std::cout << "Using camera at port " << camera::ID << "\n";
     cap = cv::VideoCapture (camera::ID);
     // cap.set(CV_CAP_PROP_EXPOSURE, 0.01);
   }
-  else
+  else // Use video from filename passed in
   {
-    std::cout << "Opening video from " << argv[1] << "\n";
+    ::std::cout << "Opening video from " << argv[1] << "\n";
     cap = cv::VideoCapture (argv[1]);
   }
+  // To make sure that input video loops when it gets to the end
+  int frameInd = 0;
+  int totalFrames = argc == 1 ? 0 : cap.get(CV_CAP_PROP_FRAME_COUNT);
+
   if (!cap.isOpened())
   {
-    std::cerr << "ERROR - Could not open camera at port " << camera::ID << std::endl;
+    ::std::cerr << "ERROR - Could not open camera at port " << camera::ID << ::std::endl;
     return -1;
   }
 
@@ -468,38 +542,34 @@ int main (int argc, char *argv[])
       cv::Size(camera::SCREEN_WIDTH, camera::SCREEN_HEIGHT), 
       isOutputColored);
 
-  std::cout << "Opened camera at port " << camera::ID << "\n";
-  std::cout << "Camera exposure: " << cap.get(CV_CAP_PROP_EXPOSURE) << "\n";
+  ::std::cout << "Opened camera at port " << camera::ID << "\n";
+  ::std::cout << "Camera exposure: " << cap.get(CV_CAP_PROP_EXPOSURE) << "\n";
   if (argc > 1)
   {
-    std::cout << "Camera fps: " << cap.get(CV_CAP_PROP_FPS) << "\n";
-    std::cout << "Camera frame count: " << cap.get(CV_CAP_PROP_FRAME_COUNT) << "\n";
+    ::std::cout << "Camera fps: " << cap.get(CV_CAP_PROP_FPS) << "\n";
+    ::std::cout << "Camera frame count: " << cap.get(CV_CAP_PROP_FRAME_COUNT) << "\n";
   }
 
-  // To make sure that input video loops when it gets to the end
-  int frameInd = 0;
-  int totalFrames = cap.get(CV_CAP_PROP_FRAME_COUNT);
-
-  std::cout << "\n";
-  std::cout << " ============== NOTICE ============= " << "\n";
-  std::cout << "|                                   |" << "\n";
-  std::cout << "| Press 'q' to quit without saving  |" << "\n";
-  std::cout << "| Press 'c' to save the input image |" << "\n";
-  std::cout << "| Press 's' to save parameters      |" << "\n";
-  std::cout << "| Press 'l' to load parameters      |" << "\n";
-  std::cout << "| Press 'r' to restart video        |" << "\n";
-  std::cout << "| Press ' ' to pause                |" << "\n";
-  std::cout << "|                                   |" << "\n";
-  std::cout << " =================================== " << "\n";
-  std::cout << "\n";
+  ::std::cout << "\n";
+  ::std::cout << " ============== NOTICE ============= " << "\n";
+  ::std::cout << "|                                   |" << "\n";
+  ::std::cout << "| Press 'q' to quit without saving  |" << "\n";
+  ::std::cout << "| Press 'c' to save the input image |" << "\n";
+  ::std::cout << "| Press 's' to save parameters      |" << "\n";
+  ::std::cout << "| Press 'l' to load parameters      |" << "\n";
+  ::std::cout << "| Press 'r' to restart video        |" << "\n";
+  ::std::cout << "| Press ' ' to pause                |" << "\n";
+  ::std::cout << "|                                   |" << "\n";
+  ::std::cout << " =================================== " << "\n";
+  ::std::cout << "\n";
 
   cv::Mat img, rgb;
   char kill = 'l';
 
-  std::chrono::high_resolution_clock::time_point start, end;
+  ::std::chrono::high_resolution_clock::time_point start, end;
 
 #if TRACK_FPS
-    start = std::chrono::high_resolution_clock::now();
+  start = ::std::chrono::high_resolution_clock::now();
 #endif
   while (kill != 'q')
   {
@@ -513,6 +583,9 @@ int main (int argc, char *argv[])
     {
       frameInd++;
       cap >> img;
+      aos::monotonic_clock::time_point tp = aos::monotonic_clock::now();
+      // std::cout << chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count() << std::endl;
+      msg.set_image_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
       if (frameInd == totalFrames)
       {
         frameInd = 0;
@@ -527,97 +600,97 @@ int main (int argc, char *argv[])
     // Press s to save values into FileStorage
     if (kill == 's')
     {
-      std::cout << "Saving config to logs/config.yml\n";
+      ::std::cout << "Saving config to logs/config.yml\n";
 
       cv::FileStorage fs("logs/config.yml", cv::FileStorage::WRITE);
       fs << "Is Blur Window Open" << blur
-        << "Is Color Window Open" << color
-        << "Is Dilate Erode Window Open" << dilateErode
-        << "Is Edge Window Open" << edge
-        << "Is Laplacian Window Open" << laplacian
-        << "Is HoughLines Window Open" << houghLines
-        << "Is HoughCircles Window Open" << houghCircles
-        << "Is uShapeThreshold Window Open" << uShapeThresholdWindow
-        << "Is sideRatioThreshold Window Open" << sideRatioThresholdWindow
-        << "Is areaRatioThreshold Window Open" << areaRatioThresholdWindow
-        << "Is angleThreshold Window Open" << angleThresholdWindow
-        << "Is drawStats Open" << drawStats
-        << "Is merge Open" << merge
+      << "Is Color Window Open" << color
+      << "Is Dilate Erode Window Open" << dilateErode
+      << "Is Edge Window Open" << edge
+      << "Is Laplacian Window Open" << laplacian
+      << "Is HoughLines Window Open" << houghLines
+      << "Is HoughCircles Window Open" << houghCircles
+      << "Is uShapeThreshold Window Open" << uShapeThresholdWindow
+      << "Is sideRatioThreshold Window Open" << sideRatioThresholdWindow
+      << "Is areaRatioThreshold Window Open" << areaRatioThresholdWindow
+      << "Is angleThreshold Window Open" << angleThresholdWindow
+      << "Is drawStats Open" << drawStats
+      << "Is merge Open" << merge
 
-        << "Apply Blur" << applyBlur
-        << "Apply Color" << applyColor
-        << "Apply DilateErode" << applyDilateErode
-        << "Apply Edge" << applyEdge
-        << "Apply Laplacian" << applyLaplacian
-        << "Apply HoughLines" << applyHoughLines
-        << "Apply HoughCircles" << applyHoughCircles
-        << "Apply UShapeRatioThreshold" << applyUShapeThreshold
-        << "Apply SideRatioThreshold" << applySideRatioThreshold
-        << "Apply AreaRatioThreshold" << applyAreaRatioThreshold
-        << "Apply AngleThreshold" << applyAngleThreshold
-        << "Apply Merge" << applyMerge
+      << "Apply Blur" << applyBlur
+      << "Apply Color" << applyColor
+      << "Apply DilateErode" << applyDilateErode
+      << "Apply Edge" << applyEdge
+      << "Apply Laplacian" << applyLaplacian
+      << "Apply HoughLines" << applyHoughLines
+      << "Apply HoughCircles" << applyHoughCircles
+      << "Apply UShapeRatioThreshold" << applyUShapeThreshold
+      << "Apply SideRatioThreshold" << applySideRatioThreshold
+      << "Apply AreaRatioThreshold" << applyAreaRatioThreshold
+      << "Apply AngleThreshold" << applyAngleThreshold
+      << "Apply Merge" << applyMerge
 
-        << "Gaussian Blur Kernel Size" << blur_ksize
-        << "Guassian Blur Sigma X" << sigmaX
-        << "Guassian Blur Sigma Y" << sigmaY
+      << "Gaussian Blur Kernel Size" << blur_ksize
+      << "Guassian Blur Sigma X" << sigmaX
+      << "Guassian Blur Sigma Y" << sigmaY
 
-        << "Hue Minimum Threshold" << hMin
-        << "Hue Maximum Threshold" << hMax
-        << "Saturation Minimum Threshold" << sMin
-        << "Saturation Maximum Threshold" << sMax
-        << "Value Minimum Threshold" << vMin
-        << "Value Maximum Threshold" << vMax
+      << "Hue Minimum Threshold" << hMin
+      << "Hue Maximum Threshold" << hMax
+      << "Saturation Minimum Threshold" << sMin
+      << "Saturation Maximum Threshold" << sMax
+      << "Value Minimum Threshold" << vMin
+      << "Value Maximum Threshold" << vMax
 
-        << "Dilate Erode Holes" << holes
-        << "Dilate Erode Noise" << noise
-        << "Dilate Erode Size" << size
+      << "Dilate Erode Holes" << holes
+      << "Dilate Erode Noise" << noise
+      << "Dilate Erode Size" << size
 
-        << "Canny Lower Threshold" << threshLow
-        << "Canny Higher Threshold" << threshHigh
+      << "Canny Lower Threshold" << threshLow
+      << "Canny Higher Threshold" << threshHigh
 
-        << "Laplacian Kernel Size" << laplacian_ksize
-        << "Laplacian Scale" << scale
-        << "Laplacian Delta" << delta
+      << "Laplacian Kernel Size" << laplacian_ksize
+      << "Laplacian Scale" << scale
+      << "Laplacian Delta" << delta
 
-        << "HoughLines Rho" << rho
-        << "HoughLines Theta" << theta
-        << "HoughLines Threshold" <<  threshold
-        << "HoughLines LineMin" << lineMin
-        << "HoughLines MaxGap" <<  maxGap
+      << "HoughLines Rho" << rho
+      << "HoughLines Theta" << theta
+      << "HoughLines Threshold" <<  threshold
+      << "HoughLines LineMin" << lineMin
+      << "HoughLines MaxGap" <<  maxGap
 
-        << "HoughCircles Minimum Distance" << hcMinDist
-        << "HoughCircles Minimum Radius" << hcMinRadius
-        << "HoughCircles Maximum Radius" << hcMaxRadius
+      << "HoughCircles Minimum Distance" << hcMinDist
+      << "HoughCircles Minimum Radius" << hcMinRadius
+      << "HoughCircles Maximum Radius" << hcMaxRadius
 
-        << "Merge Weight 1" << mergeWeight1
-        << "Merge Weight 2" <<  mergeWeight2
+      << "Merge Weight 1" << mergeWeight1
+      << "Merge Weight 2" <<  mergeWeight2
 
-        << "Side Ratio Parameter" << sideRatioParam
-        << "Area Ratio Parameter" << areaRatioParam
-        << "Minimum Area Parameter" << minAreaParam
-        << "Maximum Area Parameter" << maxAreaParam
-        << "Side Ratio Maximum Deviation Parameter" << sideRatioMaxDeviationParam
-        << "Area Ratio Maximum Deviation Parameter" << areaRatioMaxDeviationParam
-        << "Angle Max Deviation Parameter" << angleMaxDeviationParam
-        << "Corner Extractor Parameters" 
-        << "{"
-        << "Window Name" << cornerParams.windowName
-        << "Apply Filter" << cornerParams.applyFilter
-        << "Show Windows" << cornerParams.showWindows
-        << "Quality Level" << cornerParams.qualityLevel
-        << "Minimum Distance" << cornerParams.minDist
-        << "k" << cornerParams.k
-        << "Block Size" << cornerParams.blockSize
-        << "Max Corners" << cornerParams.maxCorners
-        << "Win Size" << cornerParams.winSize
-        << "Zero Zone" << cornerParams.zeroZone
-        // << "Term Criteria" << criteria
-        << "}";
+      << "Side Ratio Parameter" << sideRatioParam
+      << "Area Ratio Parameter" << areaRatioParam
+      << "Minimum Area Parameter" << minAreaParam
+      << "Maximum Area Parameter" << maxAreaParam
+      << "Side Ratio Maximum Deviation Parameter" << sideRatioMaxDeviationParam
+      << "Area Ratio Maximum Deviation Parameter" << areaRatioMaxDeviationParam
+      << "Angle Max Deviation Parameter" << angleMaxDeviationParam
+      << "Corner Extractor Parameters" 
+      << "{"
+      << "Window Name" << cornerParams.windowName
+      << "Apply Filter" << cornerParams.applyFilter
+      << "Show Windows" << cornerParams.showWindows
+      << "Quality Level" << cornerParams.qualityLevel
+      << "Minimum Distance" << cornerParams.minDist
+      << "k" << cornerParams.k
+      << "Block Size" << cornerParams.blockSize
+      << "Max Corners" << cornerParams.maxCorners
+      << "Win Size" << cornerParams.winSize
+      << "Zero Zone" << cornerParams.zeroZone
+      // << "Term Criteria" << criteria
+      << "}";
       fs.release();
     }
     else if (kill == 'l')
     {
-      std::cout << "Loading config from logs/config.yml\n";
+      ::std::cout << "Loading config from logs/config.yml\n";
       kill = '~'; // Junk value that shouldn't be used
 
       cv::FileStorage fs("logs/config.yml", cv::FileStorage::READ);
@@ -707,23 +780,30 @@ int main (int argc, char *argv[])
     }
     else if (kill == 'r')
     {
-      std::cout << "Restarting video\n";
+      ::std::cout << "Restarting video\n";
       cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     }
     else if (kill == 'p')
     {
-      std::cout << "Writing input image to " << camera::OUT_IMAGE_FILE << "\n";
+      ::std::cout << "Writing input image to " << camera::OUT_IMAGE_FILE << "\n";
       cv::imwrite(camera::OUT_IMAGE_FILE, img);
     }
     else if (kill == 'v')
     {
-      std::cout << "Writing input video to " << camera::OUT_VIDEO_FILE << "\n";
+      ::std::cout << "Writing input video to " << camera::OUT_VIDEO_FILE << "\n";
       if (os.isOpened()) os.write(img);
     }
     if (img.empty())
     {
-      std::cout << "ERROR - Image is bad (" << img.rows << ", " << img.cols << ")\n";
+      ::std::cout << "ERROR - Image is bad (" << img.rows << ", " << img.cols << ")\n";
       continue;
+    }
+    {
+      double yaw = 11;
+      msg.set_yaw(yaw);
+      aos::monotonic_clock::time_point tp = aos::monotonic_clock::now();
+      msg.set_send_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
+      sendProtobuf(msg, client);
     }
 
 #if CALIB && STREAM
@@ -771,14 +851,14 @@ int main (int argc, char *argv[])
     }
 #endif
 
-		try
-		{
-			contours = getContours(img, contoursThresh);
-		}
-		catch (std::exception& e)
-		{
-			std::cout << "No contours found\n" << e.what() << "\n";
-		}
+    try
+    {
+      contours = getContours(img, contoursThresh);
+    }
+    catch (::std::exception& e)
+    {
+      ::std::cout << "No contours found\n" << e.what() << "\n";
+    }
 
     if (contours.size() > 0)
     {
@@ -809,9 +889,14 @@ int main (int argc, char *argv[])
 
         {
           double yaw = ((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG); // Robot heading
-          if (!std::isfinite(yaw)) yaw = -1;
-          std::string gnuplotBuf = std::to_string(yaw);
-          dataFile << gnuplotBuf.c_str() << std::endl;
+          if (!::std::isfinite(yaw)) yaw = -1;
+          ::std::string gnuplotBuf = ::std::to_string(yaw);
+          dataFile << gnuplotBuf.c_str() << "\n";
+
+          msg.set_yaw(yaw);
+          aos::monotonic_clock::time_point tp = aos::monotonic_clock::now();
+          msg.set_send_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
+          sendProtobuf(msg, client);
         }
 #if CALIB
         // Draw all the contours
@@ -842,18 +927,18 @@ int main (int argc, char *argv[])
 #endif
 #if TRACK_FPS
     {
-      end = std::chrono::high_resolution_clock::now();
-      // auto timeElapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-      auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-      start = std::chrono::high_resolution_clock::now();
-      // std::cout << timeElapsed << std::endl;
+      end = ::std::chrono::high_resolution_clock::now();
+      // auto timeElapsed = ::std::chrono::duration_cast<::std::chrono::duration<double>>(end - start).count();
+      auto timeElapsed = ::std::chrono::duration_cast<::std::chrono::milliseconds>(end - start).count();
+      start = ::std::chrono::high_resolution_clock::now();
+      // ::std::cout << timeElapsed << "\n";
       // fps = 1.0 / timeElapsed;
-      // std::string gnuplotBuf = std::to_string(fps);
+      // ::std::string gnuplotBuf = ::std::to_string(fps);
 
-      std::cout << "Time elapsed in milliseconds: " << timeElapsed << std::endl;
-      std::string gnuplotBuf = std::to_string(timeElapsed) + "  " + std::to_string(timeElapsed / ++fpsTick);
+      // ::std::cout << "Time elapsed in milliseconds: " << timeElapsed << "\n";
+      ::std::string gnuplotBuf = ::std::to_string(timeElapsed) + "  " + ::std::to_string(timeElapsed / ++fpsTick);
 
-      fpsFile << gnuplotBuf.c_str() << std::endl;
+      fpsFile << gnuplotBuf.c_str() << "\n";
       avg += timeElapsed;
     }
 #endif 

@@ -15,8 +15,8 @@ PLOT_FPS_ARGS = -c 1 -n 60 -m 30
 PLOT_VISION_ARGS = -c 4 -n 30 -m 60 -d 30_deg
 
 # LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d -lopencv_features2d
-LIB = `pkg-config opencv --cflags --libs`
-CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp)
+LIB = `pkg-config --cflags --libs opencv protobuf` -lstdc++
+CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp) $(wildcard y2017/*/*.proto) $(wildcard y2017/*/*.pb.cc*)
 SRCS = $(CPPSRCS) $(CSRCS)
 
 CFLAGS_DEBUG = -g -D_LAZER_DEBUG
@@ -41,7 +41,7 @@ clean:
 	$(RM) -rf build/ obj/ .build_dir
 
 main: deploy
-	$(CXX) main.cpp build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	$(CXX) main.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
 	build/main ${MAIN_ARGS}
 
 drive_camera:

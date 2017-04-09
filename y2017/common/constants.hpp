@@ -1,6 +1,9 @@
 #ifndef _Y2017_COMMON_CONSTANTS_H_
 #define _Y2017_COMMON_CONSTANTS_H_
 
+#include <cmath>
+#include <opencv2/opencv.hpp>
+
 // Calculating fps
 #define TRACK_FPS 1
 // Calibrating with windows instead of deployment
@@ -58,7 +61,8 @@ namespace camera
 const std::string FPS_FILE = "logs/fps.log";
 const std::string PROC_DATA_FILE = "logs/processed_data.log";
 
-const std::string TARGET_ADDR = "10.2.99.2"; // Static IP address of roboRIO
+// const std::string TARGET_ADDR = "10.2.99.2"; // Static IP address of roboRIO
+const std::string TARGET_ADDR = "127.0.0.1"; // Static IP address of roboRIO
 const std::string HOST_ADDR = "localhost";
 const int UDP_PORT = 5810;
 
