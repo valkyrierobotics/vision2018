@@ -9,9 +9,10 @@
 *.log
 *.yml
 
-# Configuration and log files to share
-!logs/camera_calibration_data
-!logs/save_runs
+# Configuration, log, and image files to share
+!images/saved/**/*
+!logs/camera_calibration_data/**/*
+!logs/save_runs/**/*
 
 # Remove objects built from main
 build/
