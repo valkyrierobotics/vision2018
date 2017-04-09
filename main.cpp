@@ -881,12 +881,14 @@ int main (int argc, char *argv[])
         cv::Point mc = getCenterOfMass(contours[goalInd]);
 
         {
-          double yaw = ((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG); // Robot heading
+          // Invert robot heading because counter clockwise should be positive
+          double yaw = -((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG);
+          // TODO: Figure out how to make vision center in on center of peg and not left most strip.
           if (!::std::isfinite(yaw)) yaw = -1;
           ::std::string gnuplotBuf = ::std::to_string(yaw);
           dataFile << gnuplotBuf.c_str() << "\n";
 
-          msg.set_yaw(yaw);
+          msg.set_yaw(yaw); 
           aos::monotonic_clock::time_point tp = aos::monotonic_clock::now();
           msg.set_send_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
           sendProtobuf(msg, client);
