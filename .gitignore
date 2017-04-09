@@ -1,21 +1,19 @@
-vision
-images/*fps*
-images/mjpgs/*
-!images/mjpgs/
-# Default image that is taken by main.cpp
-images/snapped_images/main.jpeg
-# Temporary gnuplot graphs
-!images/gnuplot
+# All images and other large media files
 *.png
 *.jpg
+*.jpeg
 *.mjpeg
+*.avi
 
+# Log files
 *.log
-# Default location to store parameters and data
-logs/config.yml 
+*.yml
+
+# Configuration and log files to share
 !logs/camera_calibration_data
 !logs/save_runs
 
+# Remove objects built from main
 build/
 obj/
 .build_dir
