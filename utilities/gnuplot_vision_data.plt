@@ -10,13 +10,19 @@ if (DIR != '') {
 }
 
 time_tick = 0
-while (1) {
-    set xrange [0:DATA_NUM + 1]
-    # Set the size ratio to be the same in all directions
-    set size square
-    # set style data linespoints
-    set style line 1 lc rgb 'black' pt 3
+set xrange [0:DATA_NUM + 1]
+# Set the size ratio to be the same in all directions
+set size square
+# set style data linespoints
+set style line 1 lc rgb 'black' pt 3
 
+set title 'Angular Displacement'
+set xlabel 'Time Tick'
+set ylabel 'Angle (deg)'
+set yrange [-80:80]
+
+while (1) {
+    print "test"
     # Automatically update the last data point and replot
     if (DIR != '') {
         set term png size 1500,1500
@@ -24,10 +30,7 @@ while (1) {
         set output sprintf('images/gnuplot/%s/vision_data%05.0f.png', DIR, time_tick)
         time_tick = time_tick + 1;
     }
-    set title 'Angular Displacement'
-    set xlabel 'Time Tick'
-    set ylabel 'Angle (deg)'
-    set yrange [-80:80]
+    print "test"
     plot '< tail -n'.DATA_NUM.' '.FILENAME using 0:3 title 'Euclidean Distance' with linespoints pt 7, \
          '' using 0:3:(sprintf("%.2f",$3)) with labels nopoint offset char 0,1 font '6' notitle, \
          '< tail -n'.DATA_NUM.' '.FILENAME using 0:4 title 'Theta' with linespoints pt 7, \
