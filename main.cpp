@@ -798,13 +798,6 @@ int main (int argc, char *argv[])
       ::std::cout << "ERROR - Image is bad (" << img.rows << ", " << img.cols << ")\n";
       continue;
     }
-    {
-      double yaw = 11;
-      msg.set_yaw(yaw);
-      aos::monotonic_clock::time_point tp = aos::monotonic_clock::now();
-      msg.set_send_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
-      sendProtobuf(msg, client);
-    }
 
 #if CALIB && STREAM
     {
