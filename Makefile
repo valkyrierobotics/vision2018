@@ -10,11 +10,11 @@ TOUCH = touch
 SED = sed
 MAKEDEPEND = makedepend
 VALGRIND = valgrind
+SYMLINK = ln -sf
 # Default arguments
 PLOT_FPS_ARGS = -c 1 -n 60 -m 30
 PLOT_VISION_ARGS = -c 4 -n 30 -m 60 -d 30_deg
 
-# LIB = -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lopencv_calib3d -lopencv_features2d
 LIB = `pkg-config --cflags --libs opencv protobuf` -lstdc++
 CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp) $(wildcard y2017/*/*.proto) $(wildcard y2017/*/*.pb.cc*)
 SRCS = $(CPPSRCS) $(CSRCS)
@@ -41,8 +41,8 @@ clean:
 	$(RM) -rf build/ obj/ .build_dir
 
 # Change camera's exposure and run vision
-	# nohup watch -n10 'v4l2-ctl -c exposure_auto_priority=0 -c exposure_auto=1 -c exposure_absolute=20 --device=/dev/video1' &
 main: deploy
+	$(SYMLINK) save_runs/best.yml logs/config.yml
 	$(CXX) main.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
 	build/main ${MAIN_ARGS}
 
@@ -96,6 +96,6 @@ obj/%.o: y2017/%.cpp
 
 ### create file tree ###
 .build_dir:
-	$(MKDIR) obj obj/input obj/filters obj/logging obj/utils \
+	$(MKDIR) obj obj/input obj/filters obj/logging obj/utils obj/common \
 		build
 	$(TOUCH) .build_dir

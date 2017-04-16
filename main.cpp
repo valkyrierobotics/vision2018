@@ -15,9 +15,9 @@
 #include <fcntl.h>
 
 #include "y2017/common/constants.hpp"
+#include "y2017/common/file_system.hpp"
 
 #include "y2017/utils/getAngles.hpp"
-#include "y2017/utils/distance.hpp"
 #include "y2017/utils/getBoundedRects.hpp"
 #include "y2017/utils/getCenterOfMass.hpp"
 #include "y2017/utils/getContours.hpp"
@@ -242,37 +242,6 @@ int main (int argc, char *argv[])
   cv::VideoCapture cap;
   if (argc == 1)
   {
-    int fd;
-    if ((fd = open("/dev/video1", O_RDWR)) < 0)
-    {
-      perror("Failed to open /dev/video1");
-      exit(1);
-    }
-    struct v4l2_queryctrl queryctrl;
-    struct v4l2_control control;
-
-    // memset (&queryctrl, 0, sizeof(queryctrl));
-    // memset(&control, 0, sizeof(control));
-    //
-    // control.id = V4L2_CID_AUTOGAIN;
-    // control.value = false;
-    // ioctl(fd, VIDIOC_S_CTRL, &control);
-    //
-    memset (&queryctrl, 0, sizeof(queryctrl));
-    memset(&control, 0, sizeof(control));
-
-    control.id = V4L2_CID_EXPOSURE_AUTO;
-    control.value = 0;
-    ioctl(fd, VIDIOC_S_CTRL, &control);
-
-    memset (&queryctrl, 0, sizeof(queryctrl));
-    memset(&control, 0, sizeof(control));
-
-    control.id = V4L2_CID_EXPOSURE;
-    control.value = 1;
-    ioctl(fd, VIDIOC_S_CTRL, &control);
-
-    close (fd);
     ::std::cout << "Using camera at port " << camera::ID << "\n";
     cap = cv::VideoCapture (camera::ID);
   }
@@ -355,9 +324,9 @@ int main (int argc, char *argv[])
     // Press s to save values into FileStorage
     if (kill == 's')
     {
-      ::std::cout << "Saving config to logs/config.yml\n";
+      ::std::cout << "Saving config to " << CONFIG_FILE << "\n";
 
-      cv::FileStorage fs("logs/config.yml", cv::FileStorage::WRITE);
+      cv::FileStorage fs(CONFIG_FILE, cv::FileStorage::WRITE);
       fs << "Is Blur Window Open" << blur
       << "Is Color Window Open" << color
       << "Is Dilate Erode Window Open" << dilateErode
@@ -445,93 +414,100 @@ int main (int argc, char *argv[])
     }
     else if (kill == 'l')
     {
-      ::std::cout << "Loading config from logs/config.yml\n";
+      ::std::cout << "Loading config from " << CONFIG_FILE << "\n";
       kill = '~'; // Junk value that shouldn't be used
 
-      cv::FileStorage fs("logs/config.yml", cv::FileStorage::READ);
-      fs["Is Blur Window Open"] >> blur;
-      fs["Is Color Window Open"] >> color;
+      if (!is_file(CONFIG_FILE))
+      {
+        ::std::cout << "Warning - no such file " << CONFIG_FILE << "\n";
+      }
+      else
+      {
+        cv::FileStorage fs(CONFIG_FILE, cv::FileStorage::READ);
+        fs["Is Blur Window Open"] >> blur;
+        fs["Is Color Window Open"] >> color;
 
-      fs["Is Color Window Open"] >> color;
-      fs["Is Dilate Erode Window Open"] >> dilateErode;
-      fs["Is Edge Window Open"] >> edge;
-      fs["Is Laplacian Window Open"] >> laplacian;
-      fs["Is HoughLines Window Open"] >> houghLines;
-      fs["Is HoughCircles Window Open"] >> houghCircles;
-      fs["Is uShapeThreshold Window Open"] >> uShapeThresholdWindow;
-      fs["Is sideRatioThreshold Window Open"] >> sideRatioThresholdWindow;
-      fs["Is areaRatioThreshold Window Open"] >> areaRatioThresholdWindow;
-      fs["Is angleThreshold Window Open"] >> angleThresholdWindow;
-      fs["Is drawStats Open"] >> drawStats;
-      fs["Is merge Open"] >> merge;
+        fs["Is Color Window Open"] >> color;
+        fs["Is Dilate Erode Window Open"] >> dilateErode;
+        fs["Is Edge Window Open"] >> edge;
+        fs["Is Laplacian Window Open"] >> laplacian;
+        fs["Is HoughLines Window Open"] >> houghLines;
+        fs["Is HoughCircles Window Open"] >> houghCircles;
+        fs["Is uShapeThreshold Window Open"] >> uShapeThresholdWindow;
+        fs["Is sideRatioThreshold Window Open"] >> sideRatioThresholdWindow;
+        fs["Is areaRatioThreshold Window Open"] >> areaRatioThresholdWindow;
+        fs["Is angleThreshold Window Open"] >> angleThresholdWindow;
+        fs["Is drawStats Open"] >> drawStats;
+        fs["Is merge Open"] >> merge;
 
-      fs["Apply Blur"] >> applyBlur;
-      fs["Apply Color"] >> applyColor;
-      fs["Apply DilateErode"] >> applyDilateErode;
-      fs["Apply Edge"] >> applyEdge;
-      fs["Apply Laplacian"] >> applyLaplacian;
-      fs["Apply HoughLines"] >> applyHoughLines;
-      fs["Apply HoughCircles"] >> applyHoughCircles;
-      fs["Apply UShapeRatioThreshold"] >> applyUShapeThreshold;
-      fs["Apply SideRatioThreshold"] >> applySideRatioThreshold;
-      fs["Apply AreaRatioThreshold"] >> applyAreaRatioThreshold;
-      fs["Apply AngleThreshold"] >> applyAngleThreshold;
-      fs["Apply Merge"] >> applyMerge;
+        fs["Apply Blur"] >> applyBlur;
+        fs["Apply Color"] >> applyColor;
+        fs["Apply DilateErode"] >> applyDilateErode;
+        fs["Apply Edge"] >> applyEdge;
+        fs["Apply Laplacian"] >> applyLaplacian;
+        fs["Apply HoughLines"] >> applyHoughLines;
+        fs["Apply HoughCircles"] >> applyHoughCircles;
+        fs["Apply UShapeRatioThreshold"] >> applyUShapeThreshold;
+        fs["Apply SideRatioThreshold"] >> applySideRatioThreshold;
+        fs["Apply AreaRatioThreshold"] >> applyAreaRatioThreshold;
+        fs["Apply AngleThreshold"] >> applyAngleThreshold;
+        fs["Apply Merge"] >> applyMerge;
 
-      fs["Gaussian Blur Kernel Size"] >> blur_ksize;
-      fs["Guassian Blur Sigma X"] >> sigmaX;
-      fs["Guassian Blur Sigma Y"] >> sigmaY;
+        fs["Gaussian Blur Kernel Size"] >> blur_ksize;
+        fs["Guassian Blur Sigma X"] >> sigmaX;
+        fs["Guassian Blur Sigma Y"] >> sigmaY;
 
-      fs["Hue Minimum Threshold"] >> hMin;
-      fs["Hue Maximum Threshold"] >> hMax;
-      fs["Saturation Minimum Threshold"] >> sMin;
-      fs["Saturation Maximum Threshold"] >> sMax;
-      fs["Value Minimum Threshold"] >> vMin;
-      fs["Value Maximum Threshold"] >> vMax;
+        fs["Hue Minimum Threshold"] >> hMin;
+        fs["Hue Maximum Threshold"] >> hMax;
+        fs["Saturation Minimum Threshold"] >> sMin;
+        fs["Saturation Maximum Threshold"] >> sMax;
+        fs["Value Minimum Threshold"] >> vMin;
+        fs["Value Maximum Threshold"] >> vMax;
 
-      fs["Dilate Erode Holes"] >> holes;
-      fs["Dilate Erode Noise"] >> noise;
-      fs["Dilate Erode Size"] >> size;
+        fs["Dilate Erode Holes"] >> holes;
+        fs["Dilate Erode Noise"] >> noise;
+        fs["Dilate Erode Size"] >> size;
 
-      fs["Canny Lower Threshold"] >> threshLow;
-      fs["Canny Higher Threshold"] >> threshHigh;
+        fs["Canny Lower Threshold"] >> threshLow;
+        fs["Canny Higher Threshold"] >> threshHigh;
 
-      fs["Laplacian Kernel Size"] >> laplacian_ksize;
-      fs["Laplacian Scale"] >> scale;
-      fs["Laplacian Delta"] >> delta;
+        fs["Laplacian Kernel Size"] >> laplacian_ksize;
+        fs["Laplacian Scale"] >> scale;
+        fs["Laplacian Delta"] >> delta;
 
-      fs["HoughLines Rho"] >> rho;
-      fs["HoughLines Theta"] >> theta;
-      fs["HoughLines Threshold"] >>  threshold;
-      fs["HoughLines LineMin"] >> lineMin;
-      fs["HoughLines MaxGap"] >>  maxGap;
+        fs["HoughLines Rho"] >> rho;
+        fs["HoughLines Theta"] >> theta;
+        fs["HoughLines Threshold"] >>  threshold;
+        fs["HoughLines LineMin"] >> lineMin;
+        fs["HoughLines MaxGap"] >>  maxGap;
 
-      fs["HoughCircles Minimum Distance"] >> hcMinDist;
-      fs["HoughCircles Minimum Radius"] >> hcMinRadius;
-      fs["HoughCircles Maximum Radius"] >> hcMaxRadius;
+        fs["HoughCircles Minimum Distance"] >> hcMinDist;
+        fs["HoughCircles Minimum Radius"] >> hcMinRadius;
+        fs["HoughCircles Maximum Radius"] >> hcMaxRadius;
 
-      fs["Merge Weight 1"] >> mergeWeight1;
-      fs["Merge Weight 2"] >>  mergeWeight2;
+        fs["Merge Weight 1"] >> mergeWeight1;
+        fs["Merge Weight 2"] >>  mergeWeight2;
 
-      fs["Side Ratio Parameter"] >> sideRatioParam;
-      fs["Area Ratio Parameter"] >> areaRatioParam;
-      fs["Minimum Area Parameter"] >> minAreaParam;
-      fs["Maximum Area Parameter"] >> maxAreaParam;
-      fs["Side Ratio Maximum Deviation Parameter"] >> sideRatioMaxDeviationParam;
-      fs["Area Ratio Maximum Deviation Parameter"] >> areaRatioMaxDeviationParam;
-      fs["Angle Max Deviation Parameter"] >> angleMaxDeviationParam;
-      fs["Corner Extractor Parameters"]["Window Name"] >> cornerParams.windowName;
-      fs["Corner Extractor Parameters"]["Apply Filter"] >> cornerParams.applyFilter;
-      fs["Corner Extractor Parameters"]["Show Windows"] >> cornerParams.showWindows;
-      fs["Corner Extractor Parameters"]["Quality Level"] >> cornerParams.qualityLevel;
-      fs["Corner Extractor Parameters"]["Minimum Distance"] >> cornerParams.minDist;
-      fs["Corner Extractor Parameters"]["k"] >> cornerParams.k;
-      fs["Corner Extractor Parameters"]["Block Size"] >> cornerParams.blockSize;
-      fs["Corner Extractor Parameters"]["Max Corners"] >> cornerParams.maxCorners;
-      fs["Corner Extractor Parameters"]["Win Size"] >> cornerParams.winSize;
-      fs["Corner Extractor Parameters"]["Zero Zone"] >> cornerParams.zeroZone;
+        fs["Side Ratio Parameter"] >> sideRatioParam;
+        fs["Area Ratio Parameter"] >> areaRatioParam;
+        fs["Minimum Area Parameter"] >> minAreaParam;
+        fs["Maximum Area Parameter"] >> maxAreaParam;
+        fs["Side Ratio Maximum Deviation Parameter"] >> sideRatioMaxDeviationParam;
+        fs["Area Ratio Maximum Deviation Parameter"] >> areaRatioMaxDeviationParam;
+        fs["Angle Max Deviation Parameter"] >> angleMaxDeviationParam;
+        fs["Corner Extractor Parameters"]["Window Name"] >> cornerParams.windowName;
+        fs["Corner Extractor Parameters"]["Apply Filter"] >> cornerParams.applyFilter;
+        fs["Corner Extractor Parameters"]["Show Windows"] >> cornerParams.showWindows;
+        fs["Corner Extractor Parameters"]["Quality Level"] >> cornerParams.qualityLevel;
+        fs["Corner Extractor Parameters"]["Minimum Distance"] >> cornerParams.minDist;
+        fs["Corner Extractor Parameters"]["k"] >> cornerParams.k;
+        fs["Corner Extractor Parameters"]["Block Size"] >> cornerParams.blockSize;
+        fs["Corner Extractor Parameters"]["Max Corners"] >> cornerParams.maxCorners;
+        fs["Corner Extractor Parameters"]["Win Size"] >> cornerParams.winSize;
+        fs["Corner Extractor Parameters"]["Zero Zone"] >> cornerParams.zeroZone;
 
-      fs.release();
+        fs.release();
+      }
     }
     else if (kill == 'r')
     {

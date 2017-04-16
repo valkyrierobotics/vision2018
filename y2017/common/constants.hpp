@@ -52,6 +52,7 @@ namespace camera
 
 const std::string FPS_FILE = "logs/fps.log";
 const std::string PROC_DATA_FILE = "logs/processed_data.log";
+const std::string CONFIG_FILE = "logs/config.yml";
 
 // const std::string TARGET_ADDR = "10.2.99.2"; // Static IP address of roboRIO
 const std::string TARGET_ADDR = "127.0.0.1"; // Localhost for testing
