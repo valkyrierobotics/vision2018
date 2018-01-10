@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package y2017.vision;
+package y2018.vision;
 
 message VisionData {
   optional int64 image_timestamp = 1;

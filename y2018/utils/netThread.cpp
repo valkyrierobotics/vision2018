@@ -67,7 +67,7 @@ void receiveData (udp_client_server::udp_server& server)
     }
 }
 
-void sendProtobuf(y2017::vision::VisionData& msg, aos::events::TXUdpSocket& client)
+void sendProtobuf(y2018::vision::VisionData& msg, aos::events::TXUdpSocket& client)
 {
   std::string buf;
   msg.SerializeToString(&buf);

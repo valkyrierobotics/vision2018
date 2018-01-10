@@ -1,6 +1,6 @@
 %YAML:1.0
 Is Blur Window Open: 0
-Is Color Window Open: 1
+Is Color Window Open: 0
 Is Dilate Erode Window Open: 0
 Is Edge Window Open: 0
 Is Laplacian Window Open: 0
@@ -10,7 +10,7 @@ Is uShapeThreshold Window Open: 0
 Is sideRatioThreshold Window Open: 0
 Is areaRatioThreshold Window Open: 0
 Is angleThreshold Window Open: 0
-Is drawStats Open: 1
+Is drawStats Open: 0
 Is merge Open: 1
 Apply Blur: 1
 Apply Color: 1
@@ -22,16 +22,16 @@ Apply HoughCircles: 0
 Apply UShapeRatioThreshold: 0
 Apply SideRatioThreshold: 1
 Apply AreaRatioThreshold: 1
-Apply AngleThreshold: 1
+Apply AngleThreshold: 0
 Apply Merge: 1
 Gaussian Blur Kernel Size: 5
-Guassian Blur Sigma X: 0
-Guassian Blur Sigma Y: 0
-Hue Minimum Threshold: 100
-Hue Maximum Threshold: 300
+Guassian Blur Sigma X: 10
+Guassian Blur Sigma Y: 10
+Hue Minimum Threshold: 35
+Hue Maximum Threshold: 70
 Saturation Minimum Threshold: 0
-Saturation Maximum Threshold: 70
-Value Minimum Threshold: 66
+Saturation Maximum Threshold: 100
+Value Minimum Threshold: 20
 Value Maximum Threshold: 100
 Dilate Erode Holes: 0
 Dilate Erode Noise: 0
@@ -49,15 +49,15 @@ HoughLines MaxGap: 0
 HoughCircles Minimum Distance: 0
 HoughCircles Minimum Radius: 0
 HoughCircles Maximum Radius: 0
-Merge Weight 1: 100
+Merge Weight 1: 60
 Merge Weight 2: 100
-Side Ratio Parameter: 293
-Area Ratio Parameter: 100
-Minimum Area Parameter: 200
-Maximum Area Parameter: 25789
-Side Ratio Maximum Deviation Parameter: 100
-Area Ratio Maximum Deviation Parameter: 20
-Angle Max Deviation Parameter: 25
+Side Ratio Parameter: 120
+Area Ratio Parameter: 80
+Minimum Area Parameter: 10000
+Maximum Area Parameter: 200000
+Side Ratio Maximum Deviation Parameter: 50
+Area Ratio Maximum Deviation Parameter: 30
+Angle Max Deviation Parameter: 90
 Corner Extractor Parameters:
    Window Name: Corner Extractor
    Apply Filter: 1

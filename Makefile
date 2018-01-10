@@ -16,15 +16,15 @@ PLOT_FPS_ARGS = -c 1 -n 60 -m 30
 PLOT_VISION_ARGS = -c 4 -n 30 -m 60 -d 30_deg
 
 LIB = `pkg-config --cflags --libs opencv protobuf` -lstdc++
-CPPSRCS = $(wildcard y2017/*.cpp) $(wildcard y2017/*/*.cpp) $(wildcard y2017/*/*.proto) $(wildcard y2017/*/*.pb.cc*)
+CPPSRCS = $(wildcard y2018/*.cpp) $(wildcard y2018/*/*.cpp) $(wildcard y2018/*/*.proto) $(wildcard y2018/*/*.pb.cc*)
 SRCS = $(CPPSRCS) $(CSRCS)
 
 CFLAGS_DEBUG = -g -D_LAZER_DEBUG
-OBJS_DEBUG = $(patsubst y2017/%.cpp,obj/%-dbg.o, $(SRCS))
+OBJS_DEBUG = $(patsubst y2018/%.cpp,obj/%-dbg.o, $(SRCS))
 CFLAGS_RELEASE = -O3 -Wno-unused-value
-OBJS_RELEASE = $(patsubst y2017/%.cpp,obj/%.o,$(SRCS))
+OBJS_RELEASE = $(patsubst y2018/%.cpp,obj/%.o,$(SRCS))
 
-CFLAGS = -Iy2017 -static-libgcc -Wall -fno-use-linker-plugin -fno-exceptions -shared -fPIC
+CFLAGS = -Iy2018 -static-libgcc -Wall -fno-use-linker-plugin -fno-exceptions -shared -fPIC
 CXXFLAGS = -static-libstdc++ -std=c++11 -Wall -Wextra -fexceptions
 
 deploy: .build_dir build/lazer-vision.so
@@ -43,12 +43,12 @@ clean:
 # Change camera's exposure and run vision
 main: deploy
 	$(SYMLINK) save_runs/best.yml logs/config.yml
-	$(CXX) main.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	$(CXX) main.cpp y2018/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/main $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
 	build/main ${MAIN_ARGS}
 
 # Test protouf (necessary to run main without connecting to roboRIO)
 protobuf_test: deploy
-	$(CXX) protobuf_test.cpp y2017/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/protobuf_test $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
+	$(CXX) protobuf_test.cpp y2018/vision_data.pb.cc aos/udp.cc aos/aos_strerror.cc build/lazer-vision.so -o build/protobuf_test $(CFLAGS_RELEASE) $(CXXFLAGS) $(LIB);
 	build/protobuf_test
 
 drive_camera:
@@ -88,10 +88,10 @@ obj: $(OBJ_RELEASE)
 
 obj-debug: $(OBJ_DEBUG)
 
-obj/%-dbg.o: y2017/%.cpp
+obj/%-dbg.o: y2018/%.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-obj/%.o: y2017/%.cpp
+obj/%.o: y2018/%.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 ### create file tree ###

@@ -1,7 +1,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
-#include "y2017/utils/mjpgStream.hpp"
+#include "y2018/utils/mjpgStream.hpp"
 
 const int CAM_ID = 0;
 

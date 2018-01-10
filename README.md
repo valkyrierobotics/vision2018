@@ -1,4 +1,4 @@
-# Valkyrie Robotics's Computer Vision Code for 2017.
+# Valkyrie Robotics's Computer Vision Code for 2018.
 This release will only have auto yaw alignment.
 Replace /etc/rc.local with utilities/rc.local to prepare the camera.
 This requires OpenCV 2.4.x, Protobuf 2.5.0 and Gnuplot with wxt.

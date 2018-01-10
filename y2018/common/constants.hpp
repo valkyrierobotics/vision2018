@@ -1,12 +1,13 @@
-#ifndef _Y2017_COMMON_CONSTANTS_H_
-#define _Y2017_COMMON_CONSTANTS_H_
+#ifndef _Y2018_COMMON_CONSTANTS_H_
+#define _Y2018_COMMON_CONSTANTS_H_
 
 #include <cmath>
 #include <opencv2/opencv.hpp>
 
 #define TRACK_FPS 1 // Calculating fps
-#define CALIB 0 // Calibrating with windows instead of deployment
-#define STREAM 1 // Streaming to mjpg-streamer instead of cv::imshow
+#define CALIB 1 // Calibrating with windows instead of deployment
+#define STREAM 0 // Streaming to mjpg-streamer instead of cv::imshow
+#define NETWORKING 0 // Send data to RoboRIO through UDP
 #define IS_CAMERA_UPSIDE_DOWN 0 // Flip image if camera is upside down
 #define MAX_GAME_PIECE_CORNERS 4
 
@@ -75,4 +76,4 @@ namespace game_piece
   const double ELEVATION = 10.75;
 }
 
-#endif // __Y2017_COMMON_CONSTANTS_H_
+#endif // __Y2018_COMMON_CONSTANTS_H_

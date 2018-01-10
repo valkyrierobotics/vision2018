@@ -11,45 +11,44 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 #include <unistd.h>
-#include <libv4l2.h>
 #include <fcntl.h>
 
-#include "y2017/common/constants.hpp"
-#include "y2017/common/file_system.hpp"
+#include "y2018/common/constants.hpp"
+#include "y2018/common/file_system.hpp"
 
-#include "y2017/utils/getAngles.hpp"
-#include "y2017/utils/getBoundedRects.hpp"
-#include "y2017/utils/getCenterOfMass.hpp"
-#include "y2017/utils/getContours.hpp"
-#include "y2017/utils/getCorners.hpp"
-#include "y2017/utils/netThread.hpp"
-#include "y2017/utils/udpClientServer.hpp"
-#include "y2017/utils/mjpgStream.hpp"
-#include "y2017/utils/gui.hpp"
-#include "y2017/utils/enumCvType.hpp"
+#include "y2018/utils/getAngles.hpp"
+#include "y2018/utils/getBoundedRects.hpp"
+#include "y2018/utils/getCenterOfMass.hpp"
+#include "y2018/utils/getContours.hpp"
+#include "y2018/utils/getCorners.hpp"
+#include "y2018/utils/netThread.hpp"
+#include "y2018/utils/udpClientServer.hpp"
+#include "y2018/utils/mjpgStream.hpp"
+#include "y2018/utils/gui.hpp"
+#include "y2018/utils/enumCvType.hpp"
 
-#include "y2017/filters/selectMode.hpp"
-#include "y2017/filters/cannyEdgeDetect.hpp"
-#include "y2017/filters/dilateErode.hpp"
-#include "y2017/filters/gaussianBlur.hpp"
-#include "y2017/filters/houghLines.hpp"
-#include "y2017/filters/houghCircles.hpp"
-#include "y2017/filters/hsvColorThreshold.hpp"
-#include "y2017/filters/laplacianSharpen.hpp"
-#include "y2017/filters/mergeFinal.hpp"
-#include "y2017/filters/shapeThresholds.hpp"
+#include "y2018/filters/selectMode.hpp"
+#include "y2018/filters/cannyEdgeDetect.hpp"
+#include "y2018/filters/dilateErode.hpp"
+#include "y2018/filters/gaussianBlur.hpp"
+#include "y2018/filters/houghLines.hpp"
+#include "y2018/filters/houghCircles.hpp"
+#include "y2018/filters/hsvColorThreshold.hpp"
+#include "y2018/filters/laplacianSharpen.hpp"
+#include "y2018/filters/mergeFinal.hpp"
+#include "y2018/filters/shapeThresholds.hpp"
 
-#include "y2017/filters/cannyEdgeDetectWindows.hpp"
-#include "y2017/filters/dilateErodeWindows.hpp"
-#include "y2017/filters/gaussianBlurWindows.hpp"
-#include "y2017/filters/houghLinesWindows.hpp"
-#include "y2017/filters/houghCirclesWindows.hpp"
-#include "y2017/filters/hsvColorThresholdWindows.hpp"
-#include "y2017/filters/laplacianSharpenWindows.hpp"
-#include "y2017/filters/mergeFinalWindows.hpp"
-#include "y2017/filters/shapeThresholdsWindows.hpp"
+#include "y2018/filters/cannyEdgeDetectWindows.hpp"
+#include "y2018/filters/dilateErodeWindows.hpp"
+#include "y2018/filters/gaussianBlurWindows.hpp"
+#include "y2018/filters/houghLinesWindows.hpp"
+#include "y2018/filters/houghCirclesWindows.hpp"
+#include "y2018/filters/hsvColorThresholdWindows.hpp"
+#include "y2018/filters/laplacianSharpenWindows.hpp"
+#include "y2018/filters/mergeFinalWindows.hpp"
+#include "y2018/filters/shapeThresholdsWindows.hpp"
 
-#include "y2017/vision_data.pb.h" // Protobuf 2.5 file from vision_data.protoc
+#include "y2018/vision_data.pb.h" // Protobuf 2.5 file from vision_data.protoc
 
 #include "aos/udp.h"
 
@@ -236,7 +235,7 @@ int main (int argc, char *argv[])
   ::aos::events::TXUdpSocket client (TARGET_ADDR, UDP_PORT);
 
   // Protobuf message to send to roboRIO
-  y2017::vision::VisionData msg;
+  y2018::vision::VisionData msg;
 
   // No video passed in
   cv::VideoCapture cap;
@@ -617,6 +616,7 @@ int main (int argc, char *argv[])
 
       cv::RotatedRect mergedRect = mergedBoundedRect(contours);
       cv::Point2f mc = mergedRect.center;
+#if NETWORKING
       {
         // Left handed coordinate system (counter clockwise is negative)
         double yaw = (((mc.x - camera::SCREEN_WIDTH / 2) * camera::PIX_TO_DEG) * M_PI) / 180;
@@ -629,6 +629,7 @@ int main (int argc, char *argv[])
         msg.set_send_timestamp(chrono::duration_cast<chrono::nanoseconds>(tp.time_since_epoch()).count());
         sendProtobuf(msg, client);
       }
+#endif
 #if CALIB
       drawContours(img, contours, -1, RED, lineThickness, 8); // Draw all the contours
 #endif
@@ -641,6 +642,13 @@ int main (int argc, char *argv[])
 
       // Draw the merged bounded rectangle
       cv::Point2f rectPoints[4];
+      for (size_t i = 0; i < contours.size(); ++i)
+      {
+        boundedRects[i].points(rectPoints);
+        for (size_t p = 0; p < 4; ++p)
+            cv::line(img, rectPoints[p], rectPoints[(p+1) % 4], YELLOW, lineThickness, 8);
+      }
+
       mergedRect.points(rectPoints);
       for (size_t p = 0; p < 4; ++p)
           cv::line(img, rectPoints[p], rectPoints[(p+1) % 4], PURPLE, lineThickness, 8);

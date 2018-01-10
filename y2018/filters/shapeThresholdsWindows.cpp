@@ -64,8 +64,8 @@ void areaRatioThresholdWindows(cv::Mat& img, std::vector<std::vector<cv::Point> 
 	{
 		cv::namedWindow("Area Ratio Threshold Editor", CV_WINDOW_AUTOSIZE);
 		cv::createTrackbar("Apply Filter", "Area Ratio Threshold Editor", &apply, 1);
-		cv::createTrackbar("Minimum Rect Area", "Area Ratio Threshold Editor", &minArea, 30000);
-		cv::createTrackbar("Maximum Rect Area", "Area Ratio Threshold Editor", &maxArea, 30000);
+		cv::createTrackbar("Minimum Rect Area", "Area Ratio Threshold Editor", &minArea, 20000);
+		cv::createTrackbar("Maximum Rect Area", "Area Ratio Threshold Editor", &maxArea, 200000);
 		cv::createTrackbar("Percent Contour to Rect Area Ratio", "Area Ratio Threshold Editor", &areaRatio, 100);
 		cv::createTrackbar("+- Area Ratio Deviation (Divide by 100)", "Area Ratio Threshold Editor", &areaRatioMaxDeviation, 100);
     }
